@@ -328,10 +328,14 @@ const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); retur
 let S = Object.assign({}, DEFAULTS, load(K.set, {}));
 if (S.sites === '現場A\n現場B\n現場C') S.sites = SITES_DEFAULT; // 旧初期値を置き換え
 delete S.periods;
-// 初期設定リンク（#cfg=...）：URLの#以降はサーバーに送られず、この端末にだけ保存されます
+// 初期設定リンク（#cfg=...）：URLの#以降はサーバーに送られず、この端末にだけ保存されます。
+// ホーム画面のWebアプリはSafariと保存場所が別なので、#cfgをURLに残しておき、
+// 「ホーム画面に追加」したアプリでも最初の起動で読み込めるようにする（空欄の項目だけ埋める）
+function parseCfg(t){ const m=String(t).match(/#cfg=([^\s]+)/); return JSON.parse(m ? decodeURIComponent(m[1]) : t) }
 if (location.hash.startsWith('#cfg=')) {
-  try { Object.assign(S, JSON.parse(decodeURIComponent(location.hash.slice(5)))); save(K.set, S); setTimeout(()=>toast('設定を読み込みました'),300) } catch(e){}
-  history.replaceState(null, '', location.pathname);
+  try { const c=parseCfg(location.hash); let n=0;
+    for (const k in c) if (k in DEFAULTS && !S[k] && c[k]) { S[k]=c[k]; n++ }
+    if (n) setTimeout(()=>toast('設定を読み込みました'),300) } catch(e){}
 }
 save(K.set, S);
 let H = load(K.hist, []);
@@ -584,8 +588,8 @@ $('b-testSheet').onclick=async()=>{ if(!S.sheetUrl) return toast('URLを入れ�
   try{ await fetch(S.sheetUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({test:true})}); toast('送りました。シートに「テスト」行が出ればOK') }
   catch(e){ toast('送れませんでした。URLを確認してください') } };
 $('b-export').onclick=()=>copy(JSON.stringify(S));
-$('b-import').onclick=()=>{ const t=prompt('コピーした設定を貼り付けてください'); if(!t) return;
-  try{ S=Object.assign({},DEFAULTS,JSON.parse(t)); save(K.set,S); fillSettings(); buildSites(); refresh(); toast('読み込みました') }
+$('b-import').onclick=()=>{ const t=prompt('コピーした設定、または設定用リンクを貼り付けてください'); if(!t) return;
+  try{ S=Object.assign({},DEFAULTS,S,parseCfg(t.trim())); save(K.set,S); fillSettings(); buildSites(); refresh(); toast('読み込みました') }
   catch(e){ toast('形式が違います') } };
 
 /* ---------- タブ ---------- */
