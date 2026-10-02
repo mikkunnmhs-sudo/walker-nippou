@@ -14,13 +14,15 @@
 <style>
 :root{
   --bg:#f2f2f7; --card:#fff; --text:#000; --sub:#8e8e93; --sep:rgba(60,60,67,.18);
-  --blue:#007aff; --green:#34c759; --red:#ff3b30; --orange:#ff9500; --fill:rgba(118,118,128,.12);
+  --blue:#007aff; --green:#34c759; --red:#ff3b30; --orange:#ff9500; --pink:#ff2d55; --purple:#af52de;
+  --indigo:#5856d6; --teal:#30b0c7; --fill:rgba(118,118,128,.12); --tile:#f2f2f7;
   --seg:#fff; --bar:rgba(249,249,249,.94);
 }
 @media (prefers-color-scheme: dark){
   :root{
     --bg:#000; --card:#1c1c1e; --text:#fff; --sub:#8e8e93; --sep:rgba(84,84,88,.6);
-    --blue:#0a84ff; --green:#30d158; --red:#ff453a; --orange:#ff9f0a; --fill:rgba(118,118,128,.24);
+    --blue:#0a84ff; --green:#30d158; --red:#ff453a; --orange:#ff9f0a; --pink:#ff375f; --purple:#bf5af2;
+    --indigo:#5e5ce6; --teal:#40c8e0; --fill:rgba(118,118,128,.24); --tile:#2c2c2e;
     --seg:#636366; --bar:rgba(22,22,22,.94);
   }
 }
@@ -28,16 +30,42 @@
 html,body{margin:0;background:var(--bg);color:var(--text)}
 body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Hiragino Sans",sans-serif;font-size:17px;
   padding:env(safe-area-inset-top) 0 calc(84px + env(safe-area-inset-bottom));-webkit-text-size-adjust:100%}
+.num,.big,.card input.n,.tile input,.stat b{font-family:ui-rounded,"SF Pro Rounded",-apple-system,sans-serif;font-variant-numeric:tabular-nums}
 .page{display:none;max-width:640px;margin:0 auto;padding:0 16px}
 .page.on{display:block}
-h1{font-size:34px;font-weight:700;letter-spacing:.3px;margin:14px 4px 8px}
+.top{display:flex;align-items:flex-end;justify-content:space-between;margin:14px 4px 6px}
+.eyebrow{margin:0 0 2px;font-size:13px;font-weight:600;color:var(--sub)}
+h1{font-size:34px;font-weight:700;letter-spacing:.3px;margin:0}
+.page>h1{margin:14px 4px 8px}
+.avatar{width:36px;height:36px;border-radius:50%;border:0;flex:none;margin-bottom:4px;
+  background:linear-gradient(180deg,#a1a1a6,#7c7c80);color:#fff;font:600 16px/36px inherit;font-family:inherit}
 .hdr{display:flex;align-items:flex-end;justify-content:space-between}
 .hdr button{margin-bottom:12px}
+h2{font-size:22px;font-weight:700;margin:26px 4px 10px}
 .label{font-size:13px;color:var(--sub);text-transform:uppercase;margin:22px 16px 7px}
 .foot{font-size:13px;color:var(--sub);margin:7px 16px 0;line-height:1.4}
-.group{background:var(--card);border-radius:10px;overflow:hidden}
+.group{background:var(--card);border-radius:12px;overflow:hidden}
+/* ---- Health風カード ---- */
+.card{background:var(--card);border-radius:12px;padding:12px 16px 14px;margin-top:10px}
+.ch{display:flex;align-items:center;gap:6px;color:var(--c,var(--blue));font-size:15px;font-weight:600;margin-bottom:6px}
+.ch svg{width:18px;height:18px;flex:none}
+.ch .cr{margin-left:auto;color:var(--sub);font-weight:400;font-size:13px}
+.c-orange{--c:var(--orange)} .c-pink{--c:var(--pink)} .c-blue{--c:var(--blue)} .c-purple{--c:var(--purple)}
+.c-green{--c:var(--green)} .c-teal{--c:var(--teal)} .c-indigo{--c:var(--indigo)} .c-red{--c:var(--red)}
+.big{font-weight:700;font-size:34px;line-height:1.1;color:var(--text)}
+.big u,.stat u{text-decoration:none;font-size:15px;font-weight:600;color:var(--sub);margin:0 4px 0 2px;font-family:-apple-system,"Hiragino Sans",sans-serif}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.tile{display:block;min-width:0;overflow:hidden;background:var(--tile);border-radius:10px;padding:8px 12px;position:relative}
+.tile small{display:block;font-size:12px;font-weight:600;color:var(--sub)}
+.tile input{width:100%;border:0;background:transparent;color:var(--text);font-size:26px;font-weight:700;padding:2px 0;
+  outline:none;-webkit-appearance:none;appearance:none;min-height:36px;text-align:left}
+.tile input::-webkit-date-and-time-value{text-align:left}
+.tile input[type=time]{font-size:22px}
+.tile .unit{position:absolute;right:12px;bottom:12px;font-size:14px;font-weight:600;color:var(--sub)}
+.tile.has-unit input{padding-right:24px}
 .row{display:flex;align-items:center;min-height:44px;padding:0 16px;position:relative;gap:10px}
 .row+.row::before{content:"";position:absolute;top:0;left:16px;right:0;border-top:.5px solid var(--sep)}
+.card .row{padding:0} .card .row+.row::before{left:0}
 .row>span:first-child{flex:none}
 .row input,.row select,.row textarea{flex:1;min-width:0;border:0;background:transparent;color:var(--text);
   font:inherit;text-align:right;padding:11px 0;outline:none;-webkit-appearance:none;appearance:none}
@@ -47,17 +75,16 @@ h1{font-size:34px;font-weight:700;letter-spacing:.3px;margin:14px 4px 8px}
 .row.stack{display:block;padding:8px 16px}
 .row.stack input{text-align:left;width:100%;font-size:15px}
 .val{margin-left:auto;color:var(--sub)}
-.big{font-variant-numeric:tabular-nums;font-weight:600;color:var(--text)}
-.seg{display:flex;background:var(--fill);border-radius:9px;padding:2px;margin:8px 0;width:100%}
+.seg{display:flex;background:var(--fill);border-radius:9px;padding:2px;margin:4px 0 2px;width:100%}
 .seg button{flex:1;border:0;background:transparent;color:var(--text);font:500 13px/1 inherit;font-family:inherit;
   padding:8px 4px;border-radius:7px}
 .seg button.on{background:var(--seg);box-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04);font-weight:600}
 .btn{display:block;width:100%;border:0;border-radius:12px;padding:15px;font:600 17px inherit;font-family:inherit;margin-top:12px}
-.btn.primary{background:var(--blue);color:#fff}
+.btn.primary{background:var(--pink);color:#fff}
 .btn.plain{background:var(--card);color:var(--blue)}
 .btn:active{opacity:.6}
 .link{border:0;background:none;color:var(--blue);font:inherit;padding:0}
-.preview{white-space:pre-wrap;font-size:15px;line-height:1.5;padding:12px 16px}
+.preview{white-space:pre-wrap;font-size:15px;line-height:1.5;background:var(--tile);border-radius:10px;padding:10px 12px;margin-top:4px}
 .switch{position:relative;width:51px;height:31px;flex:none;margin-left:auto}
 .switch input{opacity:0;width:0;height:0;position:absolute}
 .switch i{position:absolute;inset:0;background:var(--fill);border-radius:31px;transition:.2s}
@@ -65,9 +92,23 @@ h1{font-size:34px;font-weight:700;letter-spacing:.3px;margin:14px 4px 8px}
   box-shadow:0 3px 8px rgba(0,0,0,.15);transition:.2s}
 .switch input:checked+i{background:var(--green)}
 .switch input:checked+i::after{transform:translateX(20px)}
-.hist .row{min-height:60px}
+/* ---- 履歴：ハイライト ---- */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:var(--card);border-radius:12px;padding:10px 12px}
+.stat .ch{font-size:13px;margin-bottom:2px}
+.stat b{font-size:24px;font-weight:700}
+.stat u{font-size:12px;margin:0 2px}
+.chart{display:flex;align-items:flex-end;gap:8px;height:140px;margin-top:22px;padding-bottom:20px;position:relative;border-bottom:.5px solid var(--sep)}
+.chart div{flex:1;position:relative;height:100%;display:flex;align-items:flex-end}
+.chart i{display:block;width:100%;border-radius:5px 5px 2px 2px;background:var(--c);min-height:3px;opacity:.95}
+.chart i.zero{background:var(--fill)}
+.chart span{position:absolute;bottom:-20px;left:0;right:0;text-align:center;font-size:11px;color:var(--sub)}
+.chart em{position:absolute;left:0;right:0;text-align:center;font-style:normal;font-size:11px;font-weight:600;color:var(--sub)}
+.hist .row{min-height:62px}
+.hist .dot{width:30px;height:30px;border-radius:8px;background:var(--orange);color:#fff;flex:none;display:flex;align-items:center;justify-content:center}
+.hist .dot svg{width:18px;height:18px}
 .hist .t{flex:1;min-width:0}
-.hist .t b{display:block;font-weight:500}
+.hist .t b{display:block;font-weight:600}
 .hist .t small{color:var(--sub);font-size:14px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .badge{font-size:12px;padding:3px 8px;border-radius:10px;background:var(--fill);color:var(--sub);flex:none}
 .badge.ng{background:rgba(255,149,0,.15);color:var(--orange)}
@@ -79,7 +120,7 @@ nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--bar);
 nav button{flex:1;border:0;background:none;color:var(--sub);font:500 10px inherit;font-family:inherit;padding:7px 0 4px;
   display:flex;flex-direction:column;align-items:center;gap:2px}
 nav button svg{width:26px;height:26px}
-nav button.on{color:var(--blue)}
+nav button.on{color:var(--pink)}
 .toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 12px);transform:translate(-50%,-120px);
   background:var(--card);color:var(--text);padding:12px 18px;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.18);
   font-size:15px;font-weight:500;transition:transform .3s;z-index:20;max-width:90vw}
@@ -102,48 +143,57 @@ nav button.on{color:var(--blue)}
 
 <!-- ===== 日報 ===== -->
 <section class="page on" id="p-input">
-  <h1>業務日報</h1>
+  <div class="top">
+    <div><p class="eyebrow" id="v-today"></p><h1>日報</h1></div>
+    <button class="avatar" id="b-avatar" aria-label="設定">?</button>
+  </div>
 
-  <div class="label">基本</div>
-  <div class="group">
+  <div class="card c-orange">
+    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 10.4 3.2 1.9-.9 1.5L11 13V7h2v5.4z"/></svg>勤務時間<span class="cr">10分単位</span></div>
+    <div class="big num" id="v-hours">--</div>
+    <div class="pair">
+      <label class="tile"><small>開始</small><input type="time" id="f-start"></label>
+      <label class="tile"><small>終了</small><input type="time" id="f-end"></label>
+    </div>
+  </div>
+
+  <div class="card c-blue">
+    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="7.5" r="4.5"/><path d="M3 21c0-4.4 4-7 9-7s9 2.6 9 7z"/></svg>基本</div>
     <div class="row"><span>名前</span><span class="val" id="v-name">未設定</span></div>
     <div class="row"><span>日付</span><input type="date" id="f-date"></div>
     <div class="row"><span>現場</span><select id="f-site"></select></div>
     <div class="row hide" id="row-other"><span>現場名</span><input id="f-siteOther" placeholder="入力"></div>
   </div>
 
-  <div class="label">稼働</div>
-  <div class="group"><div class="row"><div class="seg" id="f-period"></div></div></div>
-
-  <div class="label">時間</div>
-  <div class="group">
-    <div class="row"><span>開始</span><input type="time" id="f-start"></div>
-    <div class="row"><span>終了</span><input type="time" id="f-end"></div>
-    <div class="row"><span>勤務時間</span><span class="val big" id="v-hours">--</span></div>
+  <div class="card c-purple">
+    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 2h2v20H5zM8 3h11l-2.5 4.5L19 12H8z"/></svg>稼働</div>
+    <div class="seg" id="f-period"></div>
   </div>
 
-  <div id="sec-b1">
-    <div class="label">1便</div>
-    <div class="group">
-      <div class="row"><span>個数</span><input id="f-b1Count" inputmode="numeric" placeholder="0"></div>
-      <div class="row"><span>差異</span><input id="f-b1Diff" inputmode="numeric" placeholder="0"></div>
+  <div class="card c-green" id="sec-b1">
+    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3 6.5v11L12 22l9-4.5v-11zm0 2.2 6.4 3.2L12 10.6 5.6 7.4zM5 9.1l6 3v7.6l-6-3zm8 10.6v-7.6l6-3v7.6z"/></svg>1便</div>
+    <div class="pair">
+      <label class="tile has-unit"><small>個数</small><input class="n" id="f-b1Count" inputmode="numeric" placeholder="0"><span class="unit">個</span></label>
+      <label class="tile"><small>差異</small><input class="n" id="f-b1Diff" inputmode="numeric" placeholder="0"></label>
     </div>
   </div>
-  <div id="sec-b2">
-    <div class="label">2便</div>
-    <div class="group">
-      <div class="row"><span>個数</span><input id="f-b2Count" inputmode="numeric" placeholder="0"></div>
-      <div class="row"><span>差異</span><input id="f-b2Diff" inputmode="numeric" placeholder="0"></div>
+  <div class="card c-teal" id="sec-b2">
+    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3 6.5v11L12 22l9-4.5v-11zm0 2.2 6.4 3.2L12 10.6 5.6 7.4zM5 9.1l6 3v7.6l-6-3zm8 10.6v-7.6l6-3v7.6z"/></svg>2便</div>
+    <div class="pair">
+      <label class="tile has-unit"><small>個数</small><input class="n" id="f-b2Count" inputmode="numeric" placeholder="0"><span class="unit">個</span></label>
+      <label class="tile"><small>差異</small><input class="n" id="f-b2Diff" inputmode="numeric" placeholder="0"></label>
     </div>
   </div>
 
-  <div class="label">その他</div>
-  <div class="group">
-    <div class="row"><span>研修</span><input id="f-training" placeholder="なし"></div>
+  <div class="card c-indigo">
+    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 3h6a3 3 0 0 1 2 1 3 3 0 0 1 2-1h6v16h-6a2 2 0 0 0-2 2 2 2 0 0 0-2-2H4z"/></svg>研修</div>
+    <div class="row"><input id="f-training" placeholder="なし" style="text-align:left"></div>
   </div>
 
-  <div class="label">LINE用テキスト</div>
-  <div class="group"><div class="preview" id="v-line"></div></div>
+  <div class="card c-green">
+    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.5 3 2 6.6 2 11c0 2.5 1.4 4.7 3.7 6.1L5 21l4.2-2.3c.9.2 1.8.3 2.8.3 5.5 0 10-3.6 10-8s-4.5-8-10-8z"/></svg>LINE用テキスト<span class="cr">自動作成</span></div>
+    <div class="preview" id="v-line"></div>
+  </div>
 
   <button class="btn primary" id="b-send">記録して送信</button>
   <button class="btn plain" id="b-copy">LINE用テキストをコピー</button>
@@ -157,7 +207,17 @@ nav button.on{color:var(--blue)}
   <div id="v-unsent" class="hide">
     <button class="btn plain" id="b-resend">未送信をまとめて送る（<span id="v-unsentN"></span>件）</button>
   </div>
-  <div class="label">今月 <span id="v-month"></span></div>
+  <h2>今月のハイライト</h2>
+  <div class="stats">
+    <div class="stat c-pink"><div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2zM5 9v11h14V9z"/></svg>出勤</div><b id="v-sDays">0</b><u>日</u></div>
+    <div class="stat c-orange"><div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2s6 5 6 11a6 6 0 0 1-12 0c0-2.5 1.2-4.4 2.5-5.6 0 2 1 3.6 2.5 3.6C11 7 12 2 12 2z"/></svg>時間</div><b id="v-sHours">0</b><u>時間</u></div>
+    <div class="stat c-green"><div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3 6.5v11L12 22l9-4.5v-11zm0 2.2 6.4 3.2L12 10.6 5.6 7.4zM5 9.1l6 3v7.6l-6-3zm8 10.6v-7.6l6-3v7.6z"/></svg>個数</div><b id="v-sCount">0</b><u>個</u></div>
+  </div>
+  <div class="card c-orange">
+    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>直近7日の個数<span class="cr" id="v-wkAvg"></span></div>
+    <div class="chart" id="v-chart"></div>
+  </div>
+  <h2>記録 <span id="v-month" style="font-size:15px;color:var(--sub);font-weight:500"></span></h2>
   <div class="group hist" id="v-hist"></div>
   <p class="foot">タップでLINE文コピー・再送信・削除ができます。履歴はこのiPhoneの中だけに保存されます。</p>
 </section>
@@ -303,9 +363,10 @@ function refresh(){
   const sh=shows(period);
   $('sec-b1').classList.toggle('hide',!sh.b1); $('sec-b2').classList.toggle('hide',!sh.b2);
   const r=getRec();
-  $('v-hours').textContent=fmtH(r.minutes);
+  $('v-hours').innerHTML = r.minutes==null ? '--' : `${Math.floor(r.minutes/60)}<u>時間</u>${pad(r.minutes%60)}<u>分</u>`;
   $('v-line').textContent=lineText(r);
   $('v-name').textContent=S.name||'未設定（設定タブで入力）';
+  $('b-avatar').textContent=(S.name||'?').trim().charAt(0)||'?';
   const parts=[]; if(formBase()) parts.push(S.autoForm?'フォームに自動送信':'記入済みフォームを開く'); if(S.sheetUrl) parts.push('スプレッドシートに追加');
   $('v-sendinfo').textContent = parts.length ? '送信ボタンで：'+parts.join('＋')+'＋履歴に保存' : '送信先が未設定です（設定タブ）。今は履歴に保存だけします。';
   save(K.draft, r);
@@ -371,14 +432,32 @@ function renderHist(){
   if(!H.length){ box.innerHTML='<div class="empty">まだ記録がありません</div>' }
   H.forEach(r=>{
     const d=document.createElement('div'); d.className='row';
-    const cnt=(Number(r.b1Count)||0)+(Number(r.b2Count)||0);
-    d.innerHTML=`<div class="t"><b></b><small></small></div>${S.sheetUrl&&!r.sheetSent?'<span class="badge ng">未送信</span>':''}<span class="chev">›</span>`;
+    const cnt=cntOf(r);
+    d.innerHTML=`<span class="dot">${ICON_BOX}</span><div class="t"><b></b><small></small></div>${S.sheetUrl&&!r.sheetSent?'<span class="badge ng">未送信</span>':''}<span class="chev">›</span>`;
     d.querySelector('b').textContent=`${r.date}　${r.site}`;
     d.querySelector('small').textContent=`${r.period}・${r.start}〜${r.end}・${fmtH(r.minutes)}・${cnt}個`;
     d.onclick=()=>openSheet(r); box.appendChild(d);
   });
+  renderSummary();
   const un=H.filter(r=>S.sheetUrl&&!r.sheetSent);
   $('v-unsent').classList.toggle('hide',!un.length); $('v-unsentN').textContent=un.length;
+}
+const ICON_BOX='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3 6.5v11L12 22l9-4.5v-11zm0 2.2 6.4 3.2L12 10.6 5.6 7.4zM5 9.1l6 3v7.6l-6-3zm8 10.6v-7.6l6-3v7.6z"/></svg>';
+const cntOf = r => (Number(r.b1Count)||0)+(Number(r.b2Count)||0);
+function renderSummary(){
+  const ym=today().slice(0,7), mon=H.filter(r=>(r.date||'').startsWith(ym));
+  $('v-sDays').textContent=new Set(mon.map(r=>r.date)).size;
+  const mins=mon.reduce((s,r)=>s+(r.minutes||0),0);
+  $('v-sHours').textContent=(Math.round(mins/6)/10).toString();
+  $('v-sCount').textContent=mon.reduce((s,r)=>s+cntOf(r),0).toLocaleString();
+  const days=[]; for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i);
+    const k=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    days.push({k, wd:'日月火水木金土'[d.getDay()], v:H.filter(r=>r.date===k).reduce((s,r)=>s+cntOf(r),0)}) }
+  const max=Math.max(1,...days.map(d=>d.v)), box=$('v-chart'); box.innerHTML='';
+  days.forEach((d,i)=>{ const c=document.createElement('div'); const h=d.v?Math.max(4,d.v/max*88):0;
+    c.innerHTML=`<i class="${d.v?'':'zero'}" style="height:${h}%"></i>${d.v?`<em style="bottom:calc(${h}% + 2px)">${d.v}</em>`:''}<span>${i===6?'今日':d.wd}</span>`;
+    box.appendChild(c) });
+  const wk=days.filter(d=>d.v); $('v-wkAvg').textContent = wk.length ? `平均 ${Math.round(wk.reduce((s,d)=>s+d.v,0)/wk.length)}個/日` : '';
 }
 function openSheet(r){ cur=r; $('sheet-title').textContent=`${r.date} ${r.site}`;
   $('a-form').classList.toggle('hide',!formBase());
@@ -416,7 +495,9 @@ $('b-testSheet').onclick=async()=>{ if(!S.sheetUrl) return toast('URLを入れ�
   catch(e){ toast('送れませんでした。URLを確認してください') } };
 $('b-export').onclick=()=>copy(JSON.stringify(S));
 $('b-import').onclick=()=>{ const t=prompt('コピーした設定を貼り付けてください'); if(!t) return;
-  try{ S=Object.assign({},DEFAULTS,JSON.parse(t)); save(K.set,S); fillSettings(); buildSites(); buildPeriods(); refresh(); toast('読み込みました') }
+  try{ S=Object.assign({},DEFAULTS,JSON.parse(t)); save(K.set,S); $('b-avatar').onclick=()=>go('p-set');
+{ const d=new Date(); $('v-today').textContent=`${d.getMonth()+1}月${d.getDate()}日 ${'日月火水木金土'[d.getDay()]}曜日` }
+fillSettings(); buildSites(); buildPeriods(); refresh(); toast('読み込みました') }
   catch(e){ toast('形式が違います') } };
 
 /* ---------- タブ ---------- */
@@ -426,6 +507,8 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.p)
 
 /* ---------- 起動 ---------- */
 document.querySelectorAll('#p-input input,#p-input select').forEach(el=>{ el.addEventListener('input',refresh); el.addEventListener('change',refresh) });
+$('b-avatar').onclick=()=>go('p-set');
+{ const d=new Date(); $('v-today').textContent=`${d.getMonth()+1}月${d.getDate()}日 ${'日月火水木金土'[d.getDay()]}曜日` }
 fillSettings(); buildSites(); buildPeriods();
 const dr=load(K.draft,null);
 if(dr && dr.date===today()) setRec(dr); else setRec({date:today(), period:dr?.period, site:dr?.site, siteIsOther:dr?.siteIsOther});
