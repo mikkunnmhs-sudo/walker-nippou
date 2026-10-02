@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="日報">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="icon.png">
+<title>業務日報</title>
+<style>
+:root{
+  --bg:#f2f2f7; --card:#fff; --text:#000; --sub:#8e8e93; --sep:rgba(60,60,67,.18);
+  --blue:#007aff; --green:#34c759; --red:#ff3b30; --orange:#ff9500; --fill:rgba(118,118,128,.12);
+  --seg:#fff; --bar:rgba(249,249,249,.94);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#000; --card:#1c1c1e; --text:#fff; --sub:#8e8e93; --sep:rgba(84,84,88,.6);
+    --blue:#0a84ff; --green:#30d158; --red:#ff453a; --orange:#ff9f0a; --fill:rgba(118,118,128,.24);
+    --seg:#636366; --bar:rgba(22,22,22,.94);
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text)}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Hiragino Sans",sans-serif;font-size:17px;
+  padding:env(safe-area-inset-top) 0 calc(84px + env(safe-area-inset-bottom));-webkit-text-size-adjust:100%}
+.page{display:none;max-width:640px;margin:0 auto;padding:0 16px}
+.page.on{display:block}
+h1{font-size:34px;font-weight:700;letter-spacing:.3px;margin:14px 4px 8px}
+.hdr{display:flex;align-items:flex-end;justify-content:space-between}
+.hdr button{margin-bottom:12px}
+.label{font-size:13px;color:var(--sub);text-transform:uppercase;margin:22px 16px 7px}
+.foot{font-size:13px;color:var(--sub);margin:7px 16px 0;line-height:1.4}
+.group{background:var(--card);border-radius:10px;overflow:hidden}
+.row{display:flex;align-items:center;min-height:44px;padding:0 16px;position:relative;gap:10px}
+.row+.row::before{content:"";position:absolute;top:0;left:16px;right:0;border-top:.5px solid var(--sep)}
+.row>span:first-child{flex:none}
+.row input,.row select,.row textarea{flex:1;min-width:0;border:0;background:transparent;color:var(--text);
+  font:inherit;text-align:right;padding:11px 0;outline:none;-webkit-appearance:none;appearance:none}
+.row input[type=date],.row input[type=time]{color:var(--blue)}
+.row select{color:var(--blue);direction:rtl}
+.row textarea{text-align:left;min-height:120px;resize:vertical;font-size:15px}
+.row.stack{display:block;padding:8px 16px}
+.row.stack input{text-align:left;width:100%;font-size:15px}
+.val{margin-left:auto;color:var(--sub)}
+.big{font-variant-numeric:tabular-nums;font-weight:600;color:var(--text)}
+.seg{display:flex;background:var(--fill);border-radius:9px;padding:2px;margin:8px 0;width:100%}
+.seg button{flex:1;border:0;background:transparent;color:var(--text);font:500 13px/1 inherit;font-family:inherit;
+  padding:8px 4px;border-radius:7px}
+.seg button.on{background:var(--seg);box-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04);font-weight:600}
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:15px;font:600 17px inherit;font-family:inherit;margin-top:12px}
+.btn.primary{background:var(--blue);color:#fff}
+.btn.plain{background:var(--card);color:var(--blue)}
+.btn:active{opacity:.6}
+.link{border:0;background:none;color:var(--blue);font:inherit;padding:0}
+.preview{white-space:pre-wrap;font-size:15px;line-height:1.5;padding:12px 16px}
+.switch{position:relative;width:51px;height:31px;flex:none;margin-left:auto}
+.switch input{opacity:0;width:0;height:0;position:absolute}
+.switch i{position:absolute;inset:0;background:var(--fill);border-radius:31px;transition:.2s}
+.switch i::after{content:"";position:absolute;left:2px;top:2px;width:27px;height:27px;border-radius:50%;background:#fff;
+  box-shadow:0 3px 8px rgba(0,0,0,.15);transition:.2s}
+.switch input:checked+i{background:var(--green)}
+.switch input:checked+i::after{transform:translateX(20px)}
+.hist .row{min-height:60px}
+.hist .t{flex:1;min-width:0}
+.hist .t b{display:block;font-weight:500}
+.hist .t small{color:var(--sub);font-size:14px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{font-size:12px;padding:3px 8px;border-radius:10px;background:var(--fill);color:var(--sub);flex:none}
+.badge.ng{background:rgba(255,149,0,.15);color:var(--orange)}
+.chev{color:#c4c4c7;font-size:20px}
+.empty{text-align:center;color:var(--sub);padding:40px 0}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--bar);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+  border-top:.5px solid var(--sep);padding-bottom:env(safe-area-inset-bottom);z-index:5}
+nav button{flex:1;border:0;background:none;color:var(--sub);font:500 10px inherit;font-family:inherit;padding:7px 0 4px;
+  display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button svg{width:26px;height:26px}
+nav button.on{color:var(--blue)}
+.toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 12px);transform:translate(-50%,-120px);
+  background:var(--card);color:var(--text);padding:12px 18px;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.18);
+  font-size:15px;font-weight:500;transition:transform .3s;z-index:20;max-width:90vw}
+.toast.on{transform:translate(-50%,0)}
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:.25s;z-index:10}
+.sheet-bg.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));transform:translateY(130%);
+  transition:transform .3s,visibility .3s;z-index:11;max-width:624px;margin:0 auto;visibility:hidden}
+.sheet.on{transform:none;visibility:visible}
+.sheet .group button{display:block;width:100%;border:0;background:none;color:var(--blue);font:20px inherit;font-family:inherit;
+  padding:16px;border-top:.5px solid var(--sep)}
+.sheet .group button:first-of-type{border-top:0}
+.sheet .group button.del{color:var(--red)}
+.sheet .title{text-align:center;color:var(--sub);font-size:13px;padding:13px 16px;border-bottom:.5px solid var(--sep)}
+.sheet .cancel{margin-top:8px;font-weight:600}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- ===== 日報 ===== -->
+<section class="page on" id="p-input">
+  <h1>業務日報</h1>
+
+  <div class="label">基本</div>
+  <div class="group">
+    <div class="row"><span>名前</span><span class="val" id="v-name">未設定</span></div>
+    <div class="row"><span>日付</span><input type="date" id="f-date"></div>
+    <div class="row"><span>現場</span><select id="f-site"></select></div>
+    <div class="row hide" id="row-other"><span>現場名</span><input id="f-siteOther" placeholder="入力"></div>
+  </div>
+
+  <div class="label">稼働</div>
+  <div class="group"><div class="row"><div class="seg" id="f-period"></div></div></div>
+
+  <div class="label">時間</div>
+  <div class="group">
+    <div class="row"><span>開始</span><input type="time" id="f-start"></div>
+    <div class="row"><span>終了</span><input type="time" id="f-end"></div>
+    <div class="row"><span>勤務時間</span><span class="val big" id="v-hours">--</span></div>
+  </div>
+
+  <div id="sec-b1">
+    <div class="label">1便</div>
+    <div class="group">
+      <div class="row"><span>個数</span><input id="f-b1Count" inputmode="numeric" placeholder="0"></div>
+      <div class="row"><span>差異</span><input id="f-b1Diff" inputmode="numeric" placeholder="0"></div>
+    </div>
+  </div>
+  <div id="sec-b2">
+    <div class="label">2便</div>
+    <div class="group">
+      <div class="row"><span>個数</span><input id="f-b2Count" inputmode="numeric" placeholder="0"></div>
+      <div class="row"><span>差異</span><input id="f-b2Diff" inputmode="numeric" placeholder="0"></div>
+    </div>
+  </div>
+
+  <div class="label">その他</div>
+  <div class="group">
+    <div class="row"><span>研修</span><input id="f-training" placeholder="なし"></div>
+  </div>
+
+  <div class="label">LINE用テキスト</div>
+  <div class="group"><div class="preview" id="v-line"></div></div>
+
+  <button class="btn primary" id="b-send">記録して送信</button>
+  <button class="btn plain" id="b-copy">LINE用テキストをコピー</button>
+  <p class="foot" id="v-sendinfo"></p>
+  <button class="btn plain" id="b-clear" style="color:var(--red)">入力をリセット</button>
+</section>
+
+<!-- ===== 履歴 ===== -->
+<section class="page" id="p-hist">
+  <div class="hdr"><h1>履歴</h1><button class="link" id="b-csv">CSV書き出し</button></div>
+  <div id="v-unsent" class="hide">
+    <button class="btn plain" id="b-resend">未送信をまとめて送る（<span id="v-unsentN"></span>件）</button>
+  </div>
+  <div class="label">今月 <span id="v-month"></span></div>
+  <div class="group hist" id="v-hist"></div>
+  <p class="foot">タップでLINE文コピー・再送信・削除ができます。履歴はこのiPhoneの中だけに保存されます。</p>
+</section>
+
+<!-- ===== 設定 ===== -->
+<section class="page" id="p-set">
+  <h1>設定</h1>
+
+  <div class="label">あなた</div>
+  <div class="group"><div class="row"><span>名前</span><input id="s-name" placeholder="例：山田太郎"></div></div>
+
+  <div class="label">Googleフォーム</div>
+  <div class="group">
+    <div class="row stack"><input id="s-formUrl" placeholder="https://docs.google.com/forms/d/e/…/viewform"></div>
+    <div class="row"><span>自動で送信する</span><label class="switch"><input type="checkbox" id="s-autoForm"><i></i></label></div>
+  </div>
+  <p class="foot">オフ：記入済みのフォームが開き、自分で「送信」を押します（確実）。<br>オン：ボタン1つで送信まで完了します（フォームがログイン必須だと届きません。最初に1回テストしてください）。</p>
+
+  <div class="label">スプレッドシート</div>
+  <div class="group"><div class="row stack"><input id="s-sheetUrl" placeholder="https://script.google.com/macros/s/…/exec"></div></div>
+  <p class="foot">Apps Scriptの「ウェブアプリURL」を貼ると、記録がスプレッドシートに1行ずつ追加されます。空欄なら送りません。</p>
+
+  <div class="label">現場リスト（1行に1つ）</div>
+  <div class="group"><div class="row"><textarea id="s-sites"></textarea></div></div>
+  <p class="foot">一番下に「その他」が自動で付きます。</p>
+
+  <div class="label">稼働の選択肢（1行に1つ）</div>
+  <div class="group"><div class="row"><textarea id="s-periods" style="min-height:90px"></textarea></div></div>
+  <p class="foot">フォームの選択肢と<b>一字一句同じ</b>にしてください。「1便」を含むと1便欄、「2便」を含むと2便欄が表示されます。</p>
+
+  <div class="label">データ</div>
+  <div class="group">
+    <div class="row"><button class="link" id="b-testSheet">スプレッドシートに接続テスト</button></div>
+    <div class="row"><button class="link" id="b-export">設定をコピー（機種変更用）</button></div>
+    <div class="row"><button class="link" id="b-import">設定を貼り付けて読み込む</button></div>
+  </div>
+  <p class="foot">設定は自動で保存されます。</p>
+</section>
+
+<nav>
+  <button class="on" data-p="p-input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>日報</button>
+  <button data-p="p-hist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>履歴</button>
+  <button data-p="p-set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>設定</button>
+</nav>
+
+<div class="toast" id="toast"></div>
+<div class="sheet-bg" id="sheet-bg"></div>
+<div class="sheet" id="sheet">
+  <div class="group"><div class="title" id="sheet-title"></div>
+    <button id="a-copy">LINE文をコピー</button>
+    <button id="a-resend">スプレッドシートに再送信</button>
+    <button id="a-form">フォームを開く（記入済み）</button>
+    <button id="a-load">この内容を入力画面に読み込む</button>
+    <button class="del" id="a-del">削除</button>
+  </div>
+  <div class="group cancel"><button id="a-cancel" style="font-weight:600">キャンセル</button></div>
+</div>
+
+<script>
+/* ===== GoogleフォームのエントリーID（フォームの質問ごとの番号） ===== */
+const ENTRY = {
+  name:'22116168', date:'349692938', site:'783000564', period:'735558580',
+  start:'1150634002', end:'1739790693',
+  b1Count:'418838919', b1Diff:'678153177', b2Count:'1350651329', b2Diff:'1075609198',
+  training:'1845837377'
+};
+const DEFAULTS = {
+  name:'', formUrl:'', sheetUrl:'', autoForm:false,
+  sites:'現場A\n現場B\n現場C',
+  periods:'1便のみ\n2便のみ\n1便・2便'
+};
+const K = {set:'wn_settings', draft:'wn_draft', hist:'wn_history'};
+const $ = id => document.getElementById(id);
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d } catch(e){ return d } };
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)) } catch(e){} };
+
+let S = Object.assign({}, DEFAULTS, load(K.set, {}));
+let H = load(K.hist, []);
+const pad = n => String(n).padStart(2,'0');
+const today = () => { const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}` };
+const lines = s => s.split('\n').map(x=>x.trim()).filter(Boolean);
+const OTHER = 'その他';
+
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove('on'),2200) }
+
+/* ---------- 入力画面 ---------- */
+let period = '';
+function buildSites(sel){
+  const s=$('f-site'); s.innerHTML='';
+  [...lines(S.sites), OTHER].forEach(v=>{ const o=document.createElement('option'); o.value=o.textContent=v; s.appendChild(o) });
+  if (sel && [...s.options].some(o=>o.value===sel)) s.value = sel;
+}
+function buildPeriods(){
+  const box=$('f-period'); box.innerHTML='';
+  const ps=lines(S.periods); if(!ps.includes(period)) period=ps[ps.length-1]||'';
+  ps.forEach(p=>{ const b=document.createElement('button'); b.textContent=p; b.type='button';
+    if(p===period) b.className='on';
+    b.onclick=()=>{ period=p; buildPeriods(); refresh() }; box.appendChild(b) });
+}
+function shows(p){
+  const a=p.includes('1便'), b=p.includes('2便');
+  return (a||b) ? {b1:a,b2:b} : {b1:true,b2:true};
+}
+function minutes(st,en){
+  if(!st||!en) return null;
+  const [h1,m1]=st.split(':').map(Number),[h2,m2]=en.split(':').map(Number);
+  let m=(h2*60+m2)-(h1*60+m1); if(m<0) m+=1440;
+  return Math.floor(m/10)*10; // 10分単位で切り捨て
+}
+const fmtH = m => m==null ? '--' : `${Math.floor(m/60)}時間${pad(m%60)}分`;
+const num = v => String(v||'').replace(/[^\d\-]/g,'');
+
+function getRec(){
+  const site = $('f-site').value===OTHER ? $('f-siteOther').value.trim() : $('f-site').value;
+  const sh = shows(period);
+  return {
+    id: Date.now(), date:$('f-date').value, name:S.name, site, siteIsOther:$('f-site').value===OTHER,
+    period, start:$('f-start').value, end:$('f-end').value, minutes:minutes($('f-start').value,$('f-end').value),
+    b1Count: sh.b1?num($('f-b1Count').value):'', b1Diff: sh.b1?num($('f-b1Diff').value):'',
+    b2Count: sh.b2?num($('f-b2Count').value):'', b2Diff: sh.b2?num($('f-b2Diff').value):'',
+    training:$('f-training').value.trim()
+  };
+}
+function setRec(r){
+  $('f-date').value=r.date||today(); buildSites(r.siteIsOther?OTHER:r.site);
+  $('f-siteOther').value=r.siteIsOther?r.site:''; period=r.period||period; buildPeriods();
+  ['start','end','b1Count','b1Diff','b2Count','b2Diff','training'].forEach(k=>$('f-'+k).value=r[k]||'');
+  refresh();
+}
+function lineText(r){
+  const d=r.date?new Date(r.date+'T00:00'):null;
+  const wd=d?'日月火水木金土'[d.getDay()]:'';
+  const L=[`【業務日報】`, `日付：${d?`${d.getMonth()+1}/${d.getDate()}(${wd})`:''}`, `名前：${r.name}`,
+    `現場：${r.site}`, `稼働：${r.period}`, `時間：${r.start||'--'}〜${r.end||'--'}（${fmtH(r.minutes)}）`];
+  const sh=shows(r.period);
+  if(sh.b1) L.push(`1便：${r.b1Count||0}個（差異 ${r.b1Diff||0}）`);
+  if(sh.b2) L.push(`2便：${r.b2Count||0}個（差異 ${r.b2Diff||0}）`);
+  L.push(`研修：${r.training||'なし'}`);
+  return L.join('\n');
+}
+function refresh(){
+  $('row-other').classList.toggle('hide', $('f-site').value!==OTHER);
+  const sh=shows(period);
+  $('sec-b1').classList.toggle('hide',!sh.b1); $('sec-b2').classList.toggle('hide',!sh.b2);
+  const r=getRec();
+  $('v-hours').textContent=fmtH(r.minutes);
+  $('v-line').textContent=lineText(r);
+  $('v-name').textContent=S.name||'未設定（設定タブで入力）';
+  const parts=[]; if(formBase()) parts.push(S.autoForm?'フォームに自動送信':'記入済みフォームを開く'); if(S.sheetUrl) parts.push('スプレッドシートに追加');
+  $('v-sendinfo').textContent = parts.length ? '送信ボタンで：'+parts.join('＋')+'＋履歴に保存' : '送信先が未設定です（設定タブ）。今は履歴に保存だけします。';
+  save(K.draft, r);
+}
+
+/* ---------- 送信 ---------- */
+function formBase(){ const m=(S.formUrl||'').match(/\/forms\/d\/e\/([^\/?#]+)/); return m?`https://docs.google.com/forms/d/e/${m[1]}`:'' }
+function formParams(r, forPost){
+  const p=new URLSearchParams();
+  p.append('entry.'+ENTRY.name, r.name);
+  p.append('entry.'+ENTRY.date, r.date);
+  if(forPost && r.date){ const [y,m,d]=r.date.split('-'); p.append(`entry.${ENTRY.date}_year`,y); p.append(`entry.${ENTRY.date}_month`,m); p.append(`entry.${ENTRY.date}_day`,d) }
+  if(r.siteIsOther){ p.append('entry.'+ENTRY.site,'__other_option__'); p.append(`entry.${ENTRY.site}.other_option_response`, r.site) }
+  else p.append('entry.'+ENTRY.site, r.site);
+  p.append('entry.'+ENTRY.period, r.period);
+  [['start',r.start],['end',r.end]].forEach(([k,v])=>{ if(!v) return; p.append('entry.'+ENTRY[k], v);
+    if(forPost){ const [h,mi]=v.split(':'); p.append(`entry.${ENTRY[k]}_hour`,h); p.append(`entry.${ENTRY[k]}_minute`,mi) } });
+  ['b1Count','b1Diff','b2Count','b2Diff'].forEach(k=>{ if(r[k]!=='') p.append('entry.'+ENTRY[k], r[k]) });
+  p.append('entry.'+ENTRY.training, r.training||'なし');
+  return p;
+}
+const formPrefillUrl = r => `${formBase()}/viewform?usp=pp_url&${formParams(r,false)}`;
+async function sendForm(r){
+  await fetch(`${formBase()}/formResponse`, {method:'POST', mode:'no-cors', body:formParams(r,true)});
+}
+async function sendSheet(r){
+  await fetch(S.sheetUrl, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify({...r, hours:fmtH(r.minutes), lineText:lineText(r)})});
+}
+async function copy(t){
+  try{ await navigator.clipboard.writeText(t); toast('コピーしました') }
+  catch(e){ const a=document.createElement('textarea'); a.value=t; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); toast('コピーしました') }
+}
+
+$('b-send').onclick = async ()=>{
+  const r=getRec();
+  if(!S.name) return toast('設定タブで名前を入れてください');
+  if(!r.site) return toast('現場を入れてください');
+  if(!r.start||!r.end) return toast('開始・終了時刻を入れてください');
+  r.sheetSent=false; r.formSent=false;
+  const copied = copy(lineText(r)); // iOSは押した直後でないとコピーできないので先に
+  // iOSはボタンを押した直後でないと新しいタブを開けないので、先に開く
+  const win = (formBase() && !S.autoForm) ? window.open('about:blank','_blank') : null;
+  if(formBase()){
+    if(S.autoForm){ try{ await sendForm(r); r.formSent=true }catch(e){} }
+    else { if(win) win.location.href=formPrefillUrl(r); else location.href=formPrefillUrl(r); r.formSent=true }
+  }
+  if(S.sheetUrl){ try{ await sendSheet(r); r.sheetSent=true }catch(e){} }
+  H.unshift(r); save(K.hist,H); renderHist();
+  await copied;
+  const msg=[]; if(S.autoForm&&formBase()) msg.push(r.formSent?'フォーム送信':'フォーム未送信');
+  if(S.sheetUrl) msg.push(r.sheetSent?'シート追加':'シート未送信（電波？）');
+  toast('保存＆LINE文コピー済み'+(msg.length?' / '+msg.join(' / '):''));
+};
+$('b-copy').onclick=()=>copy(lineText(getRec()));
+$('b-clear').onclick=()=>{ if(confirm('入力をリセットしますか？')){ setRec({date:today()}) } };
+
+/* ---------- 履歴 ---------- */
+let cur=null;
+function renderHist(){
+  const box=$('v-hist'); box.innerHTML='';
+  const ym=today().slice(0,7); $('v-month').textContent=`（${H.filter(r=>(r.date||'').startsWith(ym)).length}件）`;
+  if(!H.length){ box.innerHTML='<div class="empty">まだ記録がありません</div>' }
+  H.forEach(r=>{
+    const d=document.createElement('div'); d.className='row';
+    const cnt=(Number(r.b1Count)||0)+(Number(r.b2Count)||0);
+    d.innerHTML=`<div class="t"><b></b><small></small></div>${S.sheetUrl&&!r.sheetSent?'<span class="badge ng">未送信</span>':''}<span class="chev">›</span>`;
+    d.querySelector('b').textContent=`${r.date}　${r.site}`;
+    d.querySelector('small').textContent=`${r.period}・${r.start}〜${r.end}・${fmtH(r.minutes)}・${cnt}個`;
+    d.onclick=()=>openSheet(r); box.appendChild(d);
+  });
+  const un=H.filter(r=>S.sheetUrl&&!r.sheetSent);
+  $('v-unsent').classList.toggle('hide',!un.length); $('v-unsentN').textContent=un.length;
+}
+function openSheet(r){ cur=r; $('sheet-title').textContent=`${r.date} ${r.site}`;
+  $('a-form').classList.toggle('hide',!formBase());
+  $('sheet').classList.add('on'); $('sheet-bg').classList.add('on') }
+function closeSheet(){ $('sheet').classList.remove('on'); $('sheet-bg').classList.remove('on') }
+$('sheet-bg').onclick=closeSheet; $('a-cancel').onclick=closeSheet;
+$('a-copy').onclick=()=>{ copy(lineText(cur)); closeSheet() };
+$('a-form').onclick=()=>{ window.open(formPrefillUrl(cur),'_blank'); closeSheet() };
+$('a-load').onclick=()=>{ setRec(cur); closeSheet(); go('p-input') };
+$('a-resend').onclick=async()=>{ if(!S.sheetUrl) return toast('設定でシートURLを入れてください');
+  try{ await sendSheet(cur); cur.sheetSent=true; save(K.hist,H); renderHist(); toast('再送信しました') }catch(e){ toast('送れませんでした') } closeSheet() };
+$('a-del').onclick=()=>{ if(confirm('この記録を削除しますか？')){ H=H.filter(x=>x!==cur); save(K.hist,H); renderHist() } closeSheet() };
+$('b-resend').onclick=async()=>{ let ok=0;
+  for(const r of H.filter(r=>!r.sheetSent)){ try{ await sendSheet(r); r.sheetSent=true; ok++ }catch(e){} }
+  save(K.hist,H); renderHist(); toast(`${ok}件送信しました`) };
+$('b-csv').onclick=()=>{
+  const head=['日付','名前','現場','稼働','開始','終了','勤務時間','1便個数','1便差異','2便個数','2便差異','研修'];
+  const rows=H.slice().reverse().map(r=>[r.date,r.name,r.site,r.period,r.start,r.end,fmtH(r.minutes),r.b1Count,r.b1Diff,r.b2Count,r.b2Diff,r.training]);
+  const csv='﻿'+[head,...rows].map(a=>a.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=`日報_${today()}.csv`; a.click();
+};
+
+/* ---------- 設定 ---------- */
+function fillSettings(){
+  $('s-name').value=S.name; $('s-formUrl').value=S.formUrl; $('s-sheetUrl').value=S.sheetUrl;
+  $('s-autoForm').checked=S.autoForm; $('s-sites').value=S.sites; $('s-periods').value=S.periods;
+}
+['name','formUrl','sheetUrl','sites','periods'].forEach(k=>$('s-'+k).addEventListener('input',e=>{
+  S[k]=e.target.value.trim()==='' && (k==='sites'||k==='periods') ? DEFAULTS[k] : e.target.value.trim();
+  save(K.set,S); if(k==='sites') buildSites($('f-site').value); if(k==='periods') buildPeriods(); refresh(); renderHist() }));
+$('s-autoForm').onchange=e=>{ S.autoForm=e.target.checked; save(K.set,S); refresh() };
+$('b-testSheet').onclick=async()=>{ if(!S.sheetUrl) return toast('URLを入れてください');
+  try{ await fetch(S.sheetUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({test:true})}); toast('送りました。シートに「テスト」行が出ればOK') }
+  catch(e){ toast('送れませんでした。URLを確認してください') } };
+$('b-export').onclick=()=>copy(JSON.stringify(S));
+$('b-import').onclick=()=>{ const t=prompt('コピーした設定を貼り付けてください'); if(!t) return;
+  try{ S=Object.assign({},DEFAULTS,JSON.parse(t)); save(K.set,S); fillSettings(); buildSites(); buildPeriods(); refresh(); toast('読み込みました') }
+  catch(e){ toast('形式が違います') } };
+
+/* ---------- タブ ---------- */
+function go(id){ document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.id===id));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.p===id)); scrollTo(0,0) }
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.p));
+
+/* ---------- 起動 ---------- */
+document.querySelectorAll('#p-input input,#p-input select').forEach(el=>{ el.addEventListener('input',refresh); el.addEventListener('change',refresh) });
+fillSettings(); buildSites(); buildPeriods();
+const dr=load(K.draft,null);
+if(dr && dr.date===today()) setRec(dr); else setRec({date:today(), period:dr?.period, site:dr?.site, siteIsOther:dr?.siteIsOther});
+renderHist();
+if(!S.name) setTimeout(()=>{ go('p-set'); toast('はじめに名前とURLを設定してください') },300);
+</script>
+</body>
+</html>
