@@ -137,6 +137,13 @@ nav button.on{color:var(--pink)}
 .sheet .title{text-align:center;color:var(--sub);font-size:13px;padding:13px 16px;border-bottom:.5px solid var(--sep)}
 .sheet .cancel{margin-top:8px;font-weight:600}
 .hide{display:none!important}
+.chips{display:flex;gap:8px}
+.chip{flex:1;border:0;background:var(--tile);color:var(--text);border-radius:10px;padding:12px 4px;font:600 15px inherit;font-family:inherit}
+.chip.on{background:var(--c);color:#fff}
+.autov{margin-left:auto;font-weight:700;font-size:22px}
+.autov u{text-decoration:none;font-size:13px;color:var(--sub);margin-left:2px}
+.warn{color:var(--red);font-size:13px;margin:6px 0 0}
+.sub2{font-size:12px;font-weight:600;color:var(--sub);margin:12px 0 0}
 </style>
 </head>
 <body>
@@ -148,78 +155,103 @@ nav button.on{color:var(--pink)}
     <button class="avatar" id="b-avatar" aria-label="設定">?</button>
   </div>
 
-  <div class="card c-orange">
-    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 10.4 3.2 1.9-.9 1.5L11 13V7h2v5.4z"/></svg>勤務時間<span class="cr">10分単位</span></div>
-    <div class="big num" id="v-hours">--</div>
-    <div class="pair">
-      <label class="tile"><small>開始</small><input type="time" id="f-start"></label>
-      <label class="tile"><small>終了</small><input type="time" id="f-end"></label>
-    </div>
-  </div>
-
   <div class="card c-blue">
-    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="7.5" r="4.5"/><path d="M3 21c0-4.4 4-7 9-7s9 2.6 9 7z"/></svg>基本</div>
-    <div class="row"><span>名前</span><span class="val" id="v-name">未設定</span></div>
-    <div class="row"><span>日付</span><input type="date" id="f-date"></div>
+    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="7.5" r="4.5"/><path d="M3 21c0-4.4 4-7 9-7s9 2.6 9 7z"/></svg>基本情報</div>
+    <div class="row"><span>氏名</span><span class="val" id="v-name">未設定</span></div>
+    <div class="row"><span>勤務日</span><input type="date" id="f-date"></div>
     <div class="row"><span>現場</span><select id="f-site"></select></div>
     <div class="row hide" id="row-other"><span>現場名</span><input id="f-siteOther" placeholder="入力"></div>
   </div>
 
   <div class="card c-purple">
-    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 2h2v20H5zM8 3h11l-2.5 4.5L19 12H8z"/></svg>稼働</div>
+    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 2h2v20H5zM8 3h11l-2.5 4.5L19 12H8z"/></svg>勤務時間区分</div>
     <div class="seg" id="f-period"></div>
   </div>
 
-  <div class="card c-green" id="sec-b1">
-    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3 6.5v11L12 22l9-4.5v-11zm0 2.2 6.4 3.2L12 10.6 5.6 7.4zM5 9.1l6 3v7.6l-6-3zm8 10.6v-7.6l6-3v7.6z"/></svg>1便</div>
+  <div class="card c-orange">
+    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 10.4 3.2 1.9-.9 1.5L11 13V7h2v5.4z"/></svg>出勤・退勤<span class="cr">10分単位</span></div>
+    <div class="big num" id="v-hours">--</div>
     <div class="pair">
-      <label class="tile has-unit"><small>個数</small><input class="n" id="f-b1Count" inputmode="numeric" placeholder="0"><span class="unit">個</span></label>
-      <label class="tile"><small>差異</small><input class="n" id="f-b1Diff" inputmode="numeric" placeholder="0"></label>
+      <label class="tile"><small>稼働開始（出勤）</small><input type="time" id="f-start"></label>
+      <label class="tile"><small>稼働終了（退勤）</small><input type="time" id="f-end"></label>
     </div>
   </div>
-  <div class="card c-teal" id="sec-b2">
-    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3 6.5v11L12 22l9-4.5v-11zm0 2.2 6.4 3.2L12 10.6 5.6 7.4zM5 9.1l6 3v7.6l-6-3zm8 10.6v-7.6l6-3v7.6z"/></svg>2便</div>
+
+  <div class="card c-green" id="sec-b1">
+    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3 6.5v11L12 22l9-4.5v-11zm0 2.2 6.4 3.2L12 10.6 5.6 7.4zM5 9.1l6 3v7.6l-6-3zm8 10.6v-7.6l6-3v7.6z"/></svg>1便（C1）<span class="cr" id="v-b1warn"></span></div>
     <div class="pair">
-      <label class="tile has-unit"><small>個数</small><input class="n" id="f-b2Count" inputmode="numeric" placeholder="0"><span class="unit">個</span></label>
-      <label class="tile"><small>差異</small><input class="n" id="f-b2Diff" inputmode="numeric" placeholder="0"></label>
+      <label class="tile has-unit"><small>持出個数</small><input class="n" id="f-c1p" inputmode="numeric" placeholder="0"><span class="unit">個</span></label>
+      <label class="tile has-unit"><small>持ち戻り</small><input class="n" id="f-c1r" inputmode="numeric" placeholder="0"><span class="unit">個</span></label>
+    </div>
+    <div class="row" style="margin-top:6px"><span>配完個数</span><span class="autov num" id="v-c1c">--</span></div>
+    <p class="sub2">1便 稼働時間</p>
+    <div class="pair" style="margin-top:6px">
+      <label class="tile"><small>開始</small><input type="time" id="f-b1s"></label>
+      <label class="tile"><small>終了</small><input type="time" id="f-b1e"></label>
+    </div>
+    <div class="row" style="margin-top:6px"><span>稼働時間</span><span class="autov num" id="v-b1min">--:--</span></div>
+  </div>
+  <div class="card c-teal" id="sec-b2">
+    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3 6.5v11L12 22l9-4.5v-11zm0 2.2 6.4 3.2L12 10.6 5.6 7.4zM5 9.1l6 3v7.6l-6-3zm8 10.6v-7.6l6-3v7.6z"/></svg>2便（C2）<span class="cr" id="v-b2warn"></span></div>
+    <div class="pair">
+      <label class="tile has-unit"><small>持出個数</small><input class="n" id="f-c2p" inputmode="numeric" placeholder="0"><span class="unit">個</span></label>
+      <label class="tile has-unit"><small>持ち戻り</small><input class="n" id="f-c2r" inputmode="numeric" placeholder="0"><span class="unit">個</span></label>
+    </div>
+    <div class="row" style="margin-top:6px"><span>配完個数</span><span class="autov num" id="v-c2c">--</span></div>
+    <p class="sub2">2便 稼働時間</p>
+    <div class="pair" style="margin-top:6px">
+      <label class="tile"><small>開始</small><input type="time" id="f-b2s"></label>
+      <label class="tile"><small>終了</small><input type="time" id="f-b2e"></label>
+    </div>
+    <div class="row" style="margin-top:6px"><span>稼働時間</span><span class="autov num" id="v-b2min">--:--</span></div>
+  </div>
+
+  <div class="card c-red">
+    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4a8 8 0 1 1-7.4 11h2.2A6 6 0 1 0 8 7.5L10.5 10H3V2.5l2.6 2.6A8 8 0 0 1 12 4z"/></svg>持ち戻り合計・未配</div>
+    <div class="row"><span>持ち戻り合計</span><span class="autov num" id="v-left">0<u>個</u></span></div>
+    <div class="pair">
+      <label class="tile has-unit"><small>未配個数</small><input class="n" id="f-undelivered" inputmode="numeric" placeholder="0"><span class="unit">個</span></label>
     </div>
   </div>
 
   <div class="card c-indigo">
-    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 3h6a3 3 0 0 1 2 1 3 3 0 0 1 2-1h6v16h-6a2 2 0 0 0-2 2 2 2 0 0 0-2-2H4z"/></svg>研修</div>
-    <div class="row"><input id="f-training" placeholder="なし" style="text-align:left"></div>
+    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 3h6a3 3 0 0 1 2 1 3 3 0 0 1 2-1h6v16h-6a2 2 0 0 0-2 2 2 2 0 0 0-2-2H4z"/></svg>研修担当<span class="cr">複数選択可</span></div>
+    <div class="chips" id="f-training"></div>
   </div>
 
   <div class="card c-green">
-    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.5 3 2 6.6 2 11c0 2.5 1.4 4.7 3.7 6.1L5 21l4.2-2.3c.9.2 1.8.3 2.8.3 5.5 0 10-3.6 10-8s-4.5-8-10-8z"/></svg>LINE用テキスト<span class="cr">自動作成</span></div>
+    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.5 3 2 6.6 2 11c0 2.5 1.4 4.7 3.7 6.1L5 21l4.2-2.3c.9.2 1.8.3 2.8.3 5.5 0 10-3.6 10-8s-4.5-8-10-8z"/></svg>LINE報告文<span class="cr">自動作成</span></div>
     <div class="preview" id="v-line"></div>
   </div>
 
-  <button class="btn primary" id="b-send">記録して送信</button>
-  <button class="btn plain" id="b-copy">LINE用テキストをコピー</button>
+  <button class="btn primary" id="b-send">日報を作成する</button>
+  <p class="warn hide" id="v-warn"></p>
   <p class="foot" id="v-sendinfo"></p>
+  <button class="btn plain" id="b-copy">LINE報告文をコピー</button>
+  <button class="btn plain" id="b-draft">下書き保存</button>
+  <p class="foot">入力中は自動で下書き保存されます。午前だけ終わった時などは「下書き保存」を押しておくと確実です。</p>
   <button class="btn plain" id="b-clear" style="color:var(--red)">入力をリセット</button>
 </section>
 
 <!-- ===== 履歴 ===== -->
 <section class="page" id="p-hist">
   <div class="hdr"><h1>履歴</h1><button class="link" id="b-csv">CSV書き出し</button></div>
-  <div id="v-unsent" class="hide">
-    <button class="btn plain" id="b-resend">未送信をまとめて送る（<span id="v-unsentN"></span>件）</button>
-  </div>
   <h2>今月のハイライト</h2>
   <div class="stats">
     <div class="stat c-pink"><div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2zM5 9v11h14V9z"/></svg>出勤</div><b id="v-sDays">0</b><u>日</u></div>
     <div class="stat c-orange"><div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2s6 5 6 11a6 6 0 0 1-12 0c0-2.5 1.2-4.4 2.5-5.6 0 2 1 3.6 2.5 3.6C11 7 12 2 12 2z"/></svg>時間</div><b id="v-sHours">0</b><u>時間</u></div>
-    <div class="stat c-green"><div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3 6.5v11L12 22l9-4.5v-11zm0 2.2 6.4 3.2L12 10.6 5.6 7.4zM5 9.1l6 3v7.6l-6-3zm8 10.6v-7.6l6-3v7.6z"/></svg>個数</div><b id="v-sCount">0</b><u>個</u></div>
+    <div class="stat c-green"><div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3 6.5v11L12 22l9-4.5v-11zm0 2.2 6.4 3.2L12 10.6 5.6 7.4zM5 9.1l6 3v7.6l-6-3zm8 10.6v-7.6l6-3v7.6z"/></svg>配完</div><b id="v-sCount">0</b><u>個</u></div>
   </div>
   <div class="card c-orange">
-    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>直近7日の個数<span class="cr" id="v-wkAvg"></span></div>
+    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>直近7日の配完個数<span class="cr" id="v-wkAvg"></span></div>
     <div class="chart" id="v-chart"></div>
+  </div>
+  <div id="v-unsent" class="hide">
+    <button class="btn plain" id="b-resend">未送信をまとめてシートに送る（<span id="v-unsentN"></span>件）</button>
   </div>
   <h2>記録 <span id="v-month" style="font-size:15px;color:var(--sub);font-weight:500"></span></h2>
   <div class="group hist" id="v-hist"></div>
-  <p class="foot">タップでLINE文コピー・再送信・削除ができます。履歴はこのiPhoneの中だけに保存されます。</p>
+  <p class="foot">タップでLINE文コピー・フォーム再表示・削除ができます。履歴はこのiPhoneの中だけに保存されます。</p>
 </section>
 
 <!-- ===== 設定 ===== -->
@@ -227,33 +259,32 @@ nav button.on{color:var(--pink)}
   <h1>設定</h1>
 
   <div class="label">あなた</div>
-  <div class="group"><div class="row"><span>名前</span><input id="s-name" placeholder="例：山田太郎"></div></div>
+  <div class="group"><div class="row"><span>氏名</span><input id="s-name" placeholder="例：山田太郎"></div></div>
 
   <div class="label">Googleフォーム</div>
   <div class="group">
     <div class="row stack"><input id="s-formUrl" placeholder="https://docs.google.com/forms/d/e/…/viewform"></div>
     <div class="row"><span>自動で送信する</span><label class="switch"><input type="checkbox" id="s-autoForm"><i></i></label></div>
   </div>
-  <p class="foot">オフ：記入済みのフォームが開き、自分で「送信」を押します（確実）。<br>オン：ボタン1つで送信まで完了します（フォームがログイン必須だと届きません。最初に1回テストしてください）。</p>
+  <p class="foot">オフ（おすすめ）：記入済みのフォームが開くので、確認して「送信」を押します。<br>オン：ボタン1つで送信まで完了します（届かない場合があるので、最初に1回テストしてください）。</p>
 
-  <div class="label">スプレッドシート</div>
+  <div class="label">スプレッドシート（任意）</div>
   <div class="group"><div class="row stack"><input id="s-sheetUrl" placeholder="https://script.google.com/macros/s/…/exec"></div></div>
-  <p class="foot">Apps Scriptの「ウェブアプリURL」を貼ると、記録がスプレッドシートに1行ずつ追加されます。空欄なら送りません。</p>
+  <p class="foot">Apps Scriptの「ウェブアプリURL」を貼ると、記録がシートにも送られます。空欄なら送りません。</p>
 
   <div class="label">現場リスト（1行に1つ）</div>
-  <div class="group"><div class="row"><textarea id="s-sites"></textarea></div></div>
-  <p class="foot">一番下に「その他」が自動で付きます。</p>
-
-  <div class="label">稼働の選択肢（1行に1つ）</div>
-  <div class="group"><div class="row"><textarea id="s-periods" style="min-height:90px"></textarea></div></div>
-  <p class="foot">フォームの選択肢と<b>一字一句同じ</b>にしてください。「1便」を含むと1便欄、「2便」を含むと2便欄が表示されます。</p>
+  <div class="group"><div class="row"><textarea id="s-sites" style="min-height:200px"></textarea></div></div>
+  <p class="foot">一番下に「その他」が自動で付きます。フォームの選択肢と<b>一字一句同じ</b>にしてください。</p>
 
   <div class="label">データ</div>
   <div class="group">
+    <div class="row"><button class="link" id="b-backup">履歴をバックアップ保存（ファイル）</button></div>
+    <div class="row"><button class="link" id="b-restore">バックアップから復元（GAS版のファイルもOK）</button></div>
     <div class="row"><button class="link" id="b-testSheet">スプレッドシートに接続テスト</button></div>
     <div class="row"><button class="link" id="b-export">設定をコピー（機種変更用）</button></div>
     <div class="row"><button class="link" id="b-import">設定を貼り付けて読み込む</button></div>
   </div>
+  <input type="file" id="f-restoreFile" accept="application/json,.json" class="hide">
   <p class="foot">設定は自動で保存されます。</p>
 </section>
 
@@ -268,8 +299,8 @@ nav button.on{color:var(--pink)}
 <div class="sheet" id="sheet">
   <div class="group"><div class="title" id="sheet-title"></div>
     <button id="a-copy">LINE文をコピー</button>
-    <button id="a-resend">スプレッドシートに再送信</button>
     <button id="a-form">フォームを開く（記入済み）</button>
+    <button id="a-resend">スプレッドシートに再送信</button>
     <button id="a-load">この内容を入力画面に読み込む</button>
     <button class="del" id="a-del">削除</button>
   </div>
@@ -277,34 +308,56 @@ nav button.on{color:var(--pink)}
 </div>
 
 <script>
-/* ===== GoogleフォームのエントリーID（フォームの質問ごとの番号） ===== */
+/* ===== GoogleフォームのエントリーID（GAS版と同じ） ===== */
 const ENTRY = {
   name:'22116168', date:'349692938', site:'783000564', period:'735558580',
   start:'1150634002', end:'1739790693',
-  b1Count:'418838919', b1Diff:'678153177', b2Count:'1350651329', b2Diff:'1075609198',
+  b1Count:'418838919', b1Time:'678153177', b2Count:'1350651329', b2Time:'1075609198',
   training:'1845837377'
 };
-const DEFAULTS = {
-  name:'', formUrl:'', sheetUrl:'', autoForm:false,
-  sites:'現場A\n現場B\n現場C',
-  periods:'1便のみ\n2便のみ\n1便・2便'
-};
+const SITES_DEFAULT = ['銀座','墨田','水天宮','馬喰町','人形町','葛西/西葛西','新砂','門仲西','錦糸町','門前仲町','小石川','川口',
+  '神楽坂','浅草橋','戸田','三鷹','浅草橋（午後）','蔵前','駒形','花川戸','池袋'].join('\n');
+const PERIODS = ['午前のみ','午後のみ','1日'];
+const TRAININGS = [['午前のみ','午前'],['午後のみ','午後'],['1日','1日']];
+const DEFAULTS = { name:'', formUrl:'', sheetUrl:'', autoForm:false, sites:SITES_DEFAULT };
 const K = {set:'wn_settings', draft:'wn_draft', hist:'wn_history'};
 const $ = id => document.getElementById(id);
 const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d } catch(e){ return d } };
-const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)) } catch(e){} };
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true } catch(e){ return false } };
 
 let S = Object.assign({}, DEFAULTS, load(K.set, {}));
+if (S.sites === '現場A\n現場B\n現場C') S.sites = SITES_DEFAULT; // 旧初期値を置き換え
+delete S.periods;
+// 初期設定リンク（#cfg=...）：URLの#以降はサーバーに送られず、この端末にだけ保存されます
+if (location.hash.startsWith('#cfg=')) {
+  try { Object.assign(S, JSON.parse(decodeURIComponent(location.hash.slice(5)))); save(K.set, S); setTimeout(()=>toast('設定を読み込みました'),300) } catch(e){}
+  history.replaceState(null, '', location.pathname);
+}
+save(K.set, S);
 let H = load(K.hist, []);
 const pad = n => String(n).padStart(2,'0');
 const today = () => { const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}` };
 const lines = s => s.split('\n').map(x=>x.trim()).filter(Boolean);
 const OTHER = 'その他';
 
-function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove('on'),2200) }
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove('on'),2400) }
+
+/* ---------- 計算 ---------- */
+function minutes(st,en){ // GAS版と同じく10分単位で四捨五入
+  if(!st||!en) return null;
+  const [h1,m1]=st.split(':').map(Number),[h2,m2]=en.split(':').map(Number);
+  let m=(h2*60+m2)-(h1*60+m1); if(m<0) m+=1440;
+  return Math.round(m/10)*10;
+}
+const fmtH = m => m==null ? '--' : `${Math.floor(m/60)}時間${pad(m%60)}分`;
+const hm = m => m==null ? '' : `${Math.floor(m/60)}:${pad(m%60)}`;      // 2:30
+const hmPad = m => m==null ? '' : `${pad(Math.floor(m/60))}:${pad(m%60)}`; // 02:30（フォーム用）
+const num = v => String(v??'').replace(/[^\d]/g,'');
+const shows = p => ({b1: p!=='午後のみ', b2: p!=='午前のみ'});
+const cntOf = r => (Number(r.c1c)||0)+(Number(r.c2c)||0);
 
 /* ---------- 入力画面 ---------- */
-let period = '';
+let period = '1日', training = [];
 function buildSites(sel){
   const s=$('f-site'); s.innerHTML='';
   [...lines(S.sites), OTHER].forEach(v=>{ const o=document.createElement('option'); o.value=o.textContent=v; s.appendChild(o) });
@@ -312,51 +365,58 @@ function buildSites(sel){
 }
 function buildPeriods(){
   const box=$('f-period'); box.innerHTML='';
-  const ps=lines(S.periods); if(!ps.includes(period)) period=ps[ps.length-1]||'';
-  ps.forEach(p=>{ const b=document.createElement('button'); b.textContent=p; b.type='button';
-    if(p===period) b.className='on';
-    b.onclick=()=>{ period=p; buildPeriods(); refresh() }; box.appendChild(b) });
+  PERIODS.forEach(p=>{ const b=document.createElement('button'); b.textContent=p; b.type='button';
+    if(p===period) b.className='on'; b.onclick=()=>{ period=p; buildPeriods(); refresh() }; box.appendChild(b) });
 }
-function shows(p){
-  const a=p.includes('1便'), b=p.includes('2便');
-  return (a||b) ? {b1:a,b2:b} : {b1:true,b2:true};
+function buildTraining(){
+  const box=$('f-training'); box.innerHTML='';
+  TRAININGS.forEach(([v,label])=>{ const b=document.createElement('button'); b.type='button'; b.className='chip'+(training.includes(v)?' on':'');
+    b.textContent=label; b.onclick=()=>{ training = training.includes(v) ? training.filter(x=>x!==v) : TRAININGS.map(t=>t[0]).filter(x=>x===v||training.includes(x)); buildTraining(); refresh() };
+    box.appendChild(b) });
 }
-function minutes(st,en){
-  if(!st||!en) return null;
-  const [h1,m1]=st.split(':').map(Number),[h2,m2]=en.split(':').map(Number);
-  let m=(h2*60+m2)-(h1*60+m1); if(m<0) m+=1440;
-  return Math.floor(m/10)*10; // 10分単位で切り捨て
-}
-const fmtH = m => m==null ? '--' : `${Math.floor(m/60)}時間${pad(m%60)}分`;
-const num = v => String(v||'').replace(/[^\d\-]/g,'');
-
 function getRec(){
-  const site = $('f-site').value===OTHER ? $('f-siteOther').value.trim() : $('f-site').value;
-  const sh = shows(period);
-  return {
-    id: Date.now(), date:$('f-date').value, name:S.name, site, siteIsOther:$('f-site').value===OTHER,
-    period, start:$('f-start').value, end:$('f-end').value, minutes:minutes($('f-start').value,$('f-end').value),
-    b1Count: sh.b1?num($('f-b1Count').value):'', b1Diff: sh.b1?num($('f-b1Diff').value):'',
-    b2Count: sh.b2?num($('f-b2Count').value):'', b2Diff: sh.b2?num($('f-b2Diff').value):'',
-    training:$('f-training').value.trim()
-  };
+  const sh=shows(period), isOther=$('f-site').value===OTHER;
+  const r = { id:Date.now(), date:$('f-date').value, name:S.name,
+    site: isOther ? $('f-siteOther').value.trim() : $('f-site').value, siteIsOther:isOther,
+    period, start:$('f-start').value, end:$('f-end').value, undelivered:num($('f-undelivered').value)||'0', training:[...training] };
+  r.minutes = minutes(r.start, r.end);
+  [1,2].forEach(n=>{
+    const on = sh['b'+n];
+    const p=num($(`f-c${n}p`).value), rr=num($(`f-c${n}r`).value)||'0';
+    r[`c${n}p`] = on ? p : ''; r[`c${n}r`] = on ? rr : '';
+    r[`c${n}c`] = on && p!=='' ? String(Number(p)-Number(rr)) : '';
+    r[`b${n}s`] = on ? $(`f-b${n}s`).value : ''; r[`b${n}e`] = on ? $(`f-b${n}e`).value : '';
+    r[`b${n}min`] = on ? minutes(r[`b${n}s`], r[`b${n}e`]) : null;
+  });
+  r.leftover = String((Number(r.c1r)||0)+(Number(r.c2r)||0));
+  return r;
 }
 function setRec(r){
   $('f-date').value=r.date||today(); buildSites(r.siteIsOther?OTHER:r.site);
-  $('f-siteOther').value=r.siteIsOther?r.site:''; period=r.period||period; buildPeriods();
-  ['start','end','b1Count','b1Diff','b2Count','b2Diff','training'].forEach(k=>$('f-'+k).value=r[k]||'');
+  $('f-siteOther').value=r.siteIsOther?r.site:'';
+  period = PERIODS.includes(r.period) ? r.period : period; buildPeriods();
+  training = Array.isArray(r.training) ? r.training : []; buildTraining();
+  $('f-start').value=r.start||''; $('f-end').value=r.end||''; $('f-undelivered').value=r.undelivered&&r.undelivered!=='0'?r.undelivered:'';
+  [1,2].forEach(n=>{ $(`f-c${n}p`).value=r[`c${n}p`]||''; $(`f-c${n}r`).value=r[`c${n}r`]&&r[`c${n}r`]!=='0'?r[`c${n}r`]:'';
+    $(`f-b${n}s`).value=r[`b${n}s`]||''; $(`f-b${n}e`).value=r[`b${n}e`]||'' });
   refresh();
 }
-function lineText(r){
-  const d=r.date?new Date(r.date+'T00:00'):null;
-  const wd=d?'日月火水木金土'[d.getDay()]:'';
-  const L=[`【業務日報】`, `日付：${d?`${d.getMonth()+1}/${d.getDate()}(${wd})`:''}`, `名前：${r.name}`,
-    `現場：${r.site}`, `稼働：${r.period}`, `時間：${r.start||'--'}〜${r.end||'--'}（${fmtH(r.minutes)}）`];
-  const sh=shows(r.period);
-  if(sh.b1) L.push(`1便：${r.b1Count||0}個（差異 ${r.b1Diff||0}）`);
-  if(sh.b2) L.push(`2便：${r.b2Count||0}個（差異 ${r.b2Diff||0}）`);
-  L.push(`研修：${r.training||'なし'}`);
+function lineText(r){ // GAS版と同じ形式
+  const sh=shows(r.period), L=[r.name, ''];
+  L.push(`稼働開始時間: ${r.start}`, `稼働終了時間: ${r.end}`);
+  if(sh.b1) L.push(`C1持出個数:${r.c1p}`);
+  if(sh.b2) L.push(`C2持出個数:${r.c2p}`);
+  if(sh.b1) L.push(`C1配完個数:${r.c1c}`);
+  if(sh.b2) L.push(`C2配完個数:${r.c2c}`);
+  L.push(`持ち戻り個数:${r.leftover}`, `未配個数:${r.undelivered}`);
   return L.join('\n');
+}
+function missing(r){
+  if(!S.name) return '設定タブで氏名を入れてください';
+  if(!r.site) return '現場名を入れてください';
+  const sh=shows(r.period);
+  if((sh.b1&&r.c1p==='')||(sh.b2&&r.c2p==='')) return '配送実績の持出個数を入力してください';
+  return '';
 }
 function refresh(){
   $('row-other').classList.toggle('hide', $('f-site').value!==OTHER);
@@ -364,52 +424,60 @@ function refresh(){
   $('sec-b1').classList.toggle('hide',!sh.b1); $('sec-b2').classList.toggle('hide',!sh.b2);
   const r=getRec();
   $('v-hours').innerHTML = r.minutes==null ? '--' : `${Math.floor(r.minutes/60)}<u>時間</u>${pad(r.minutes%60)}<u>分</u>`;
+  [1,2].forEach(n=>{
+    const c=r[`c${n}c`]; $(`v-c${n}c`).innerHTML = c==='' ? '--' : `${c}<u>個</u>`;
+    $(`v-c${n}c`).style.color = Number(c)<0 ? 'var(--red)' : '';
+    $(`v-b${n}warn`).textContent = Number(c)<0 ? '持ち戻りが持出を超えています' : '';
+    $(`v-b${n}min`).textContent = r[`b${n}min`]==null ? '--:--' : hm(r[`b${n}min`]);
+  });
+  $('v-left').innerHTML = `${r.leftover}<u>個</u>`;
   $('v-line').textContent=lineText(r);
   $('v-name').textContent=S.name||'未設定（設定タブで入力）';
   $('b-avatar').textContent=(S.name||'?').trim().charAt(0)||'?';
-  const parts=[]; if(formBase()) parts.push(S.autoForm?'フォームに自動送信':'記入済みフォームを開く'); if(S.sheetUrl) parts.push('スプレッドシートに追加');
-  $('v-sendinfo').textContent = parts.length ? '送信ボタンで：'+parts.join('＋')+'＋履歴に保存' : '送信先が未設定です（設定タブ）。今は履歴に保存だけします。';
+  const parts=[]; if(formBase()) parts.push(S.autoForm?'フォームに自動送信':'記入済みフォームを開く'); if(S.sheetUrl) parts.push('シートに追加');
+  $('v-sendinfo').textContent = 'ボタンで：LINE文コピー'+(parts.length?'＋'+parts.join('＋'):'')+'＋履歴に保存'+(formBase()?'':'（フォームURLが未設定です）');
+  if(!$('v-warn').classList.contains('hide') && !missing(r)) $('v-warn').classList.add('hide');
   save(K.draft, r);
 }
 
 /* ---------- 送信 ---------- */
 function formBase(){ const m=(S.formUrl||'').match(/\/forms\/d\/e\/([^\/?#]+)/); return m?`https://docs.google.com/forms/d/e/${m[1]}`:'' }
 function formParams(r, forPost){
-  const p=new URLSearchParams();
+  const p=new URLSearchParams(), sh=shows(r.period);
+  if(!forPost) p.append('usp','pp_url');
   p.append('entry.'+ENTRY.name, r.name);
-  p.append('entry.'+ENTRY.date, r.date);
-  if(forPost && r.date){ const [y,m,d]=r.date.split('-'); p.append(`entry.${ENTRY.date}_year`,y); p.append(`entry.${ENTRY.date}_month`,m); p.append(`entry.${ENTRY.date}_day`,d) }
+  if(r.date){ p.append('entry.'+ENTRY.date, r.date);
+    if(forPost){ const [y,m,d]=r.date.split('-'); p.append(`entry.${ENTRY.date}_year`,y); p.append(`entry.${ENTRY.date}_month`,m); p.append(`entry.${ENTRY.date}_day`,d) } }
   if(r.siteIsOther){ p.append('entry.'+ENTRY.site,'__other_option__'); p.append(`entry.${ENTRY.site}.other_option_response`, r.site) }
   else p.append('entry.'+ENTRY.site, r.site);
-  p.append('entry.'+ENTRY.period, r.period);
-  [['start',r.start],['end',r.end]].forEach(([k,v])=>{ if(!v) return; p.append('entry.'+ENTRY[k], v);
-    if(forPost){ const [h,mi]=v.split(':'); p.append(`entry.${ENTRY[k]}_hour`,h); p.append(`entry.${ENTRY[k]}_minute`,mi) } });
-  ['b1Count','b1Diff','b2Count','b2Diff'].forEach(k=>{ if(r[k]!=='') p.append('entry.'+ENTRY[k], r[k]) });
-  p.append('entry.'+ENTRY.training, r.training||'なし');
+  if(r.period) p.append('entry.'+ENTRY.period, r.period);
+  const time=(id,v)=>{ if(!v) return; p.append('entry.'+id, v);
+    if(forPost){ const [h,mi]=v.split(':'); p.append(`entry.${id}_hour`,h); p.append(`entry.${id}_minute`,mi) } };
+  time(ENTRY.start, r.start); time(ENTRY.end, r.end);
+  [1,2].forEach(n=>{ if(!sh['b'+n]) return;
+    p.append('entry.'+ENTRY[`b${n}Count`], r[`c${n}c`]);
+    if(r[`b${n}min`]!=null) time(ENTRY[`b${n}Time`], hmPad(r[`b${n}min`])) });
+  (r.training||[]).forEach(v=>p.append('entry.'+ENTRY.training, v)); // チェックボックスは同じIDを繰り返す
   return p;
 }
-const formPrefillUrl = r => `${formBase()}/viewform?usp=pp_url&${formParams(r,false)}`;
-async function sendForm(r){
-  await fetch(`${formBase()}/formResponse`, {method:'POST', mode:'no-cors', body:formParams(r,true)});
-}
+const formPrefillUrl = r => `${formBase()}/viewform?${formParams(r,false)}`;
+async function sendForm(r){ await fetch(`${formBase()}/formResponse`, {method:'POST', mode:'no-cors', body:formParams(r,true)}) }
 async function sendSheet(r){
   await fetch(S.sheetUrl, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body:JSON.stringify({...r, hours:fmtH(r.minutes), lineText:lineText(r)})});
+    body:JSON.stringify({...r, hours:fmtH(r.minutes), b1Time:hm(r.b1min), b2Time:hm(r.b2min), trainingText:r.training.join('・')||'なし', lineText:lineText(r)})});
 }
-async function copy(t){
-  try{ await navigator.clipboard.writeText(t); toast('コピーしました') }
-  catch(e){ const a=document.createElement('textarea'); a.value=t; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); toast('コピーしました') }
+async function copy(t, quiet){
+  try{ await navigator.clipboard.writeText(t) }
+  catch(e){ const a=document.createElement('textarea'); a.value=t; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove() }
+  if(!quiet) toast('コピーしました');
 }
 
 $('b-send').onclick = async ()=>{
-  const r=getRec();
-  if(!S.name) return toast('設定タブで名前を入れてください');
-  if(!r.site) return toast('現場を入れてください');
-  if(!r.start||!r.end) return toast('開始・終了時刻を入れてください');
+  const r=getRec(), err=missing(r);
+  if(err){ $('v-warn').textContent=err; $('v-warn').classList.remove('hide'); return toast(err) }
   r.sheetSent=false; r.formSent=false;
-  const copied = copy(lineText(r)); // iOSは押した直後でないとコピーできないので先に
-  // iOSはボタンを押した直後でないと新しいタブを開けないので、先に開く
-  const win = (formBase() && !S.autoForm) ? window.open('about:blank','_blank') : null;
+  const copied = copy(lineText(r), true); // iOSは押した直後でないとコピーできないので先に
+  const win = (formBase() && !S.autoForm) ? window.open('about:blank','_blank') : null; // 同じ理由で先に開く
   if(formBase()){
     if(S.autoForm){ try{ await sendForm(r); r.formSent=true }catch(e){} }
     else { if(win) win.location.href=formPrefillUrl(r); else location.href=formPrefillUrl(r); r.formSent=true }
@@ -422,98 +490,119 @@ $('b-send').onclick = async ()=>{
   toast('保存＆LINE文コピー済み'+(msg.length?' / '+msg.join(' / '):''));
 };
 $('b-copy').onclick=()=>copy(lineText(getRec()));
-$('b-clear').onclick=()=>{ if(confirm('入力をリセットしますか？')){ setRec({date:today()}) } };
+$('b-draft').onclick=()=>toast(save(K.draft,getRec())?'下書きを保存しました':'保存に失敗しました');
+$('b-clear').onclick=()=>{ if(confirm('入力をリセットしますか？')) setRec({date:today(), period, site:$('f-site').value}) };
 
 /* ---------- 履歴 ---------- */
-let cur=null;
-function renderHist(){
-  const box=$('v-hist'); box.innerHTML='';
-  const ym=today().slice(0,7); $('v-month').textContent=`（${H.filter(r=>(r.date||'').startsWith(ym)).length}件）`;
-  if(!H.length){ box.innerHTML='<div class="empty">まだ記録がありません</div>' }
-  H.forEach(r=>{
-    const d=document.createElement('div'); d.className='row';
-    const cnt=cntOf(r);
-    d.innerHTML=`<span class="dot">${ICON_BOX}</span><div class="t"><b></b><small></small></div>${S.sheetUrl&&!r.sheetSent?'<span class="badge ng">未送信</span>':''}<span class="chev">›</span>`;
-    d.querySelector('b').textContent=`${r.date}　${r.site}`;
-    d.querySelector('small').textContent=`${r.period}・${r.start}〜${r.end}・${fmtH(r.minutes)}・${cnt}個`;
-    d.onclick=()=>openSheet(r); box.appendChild(d);
-  });
-  renderSummary();
-  const un=H.filter(r=>S.sheetUrl&&!r.sheetSent);
-  $('v-unsent').classList.toggle('hide',!un.length); $('v-unsentN').textContent=un.length;
-}
 const ICON_BOX='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3 6.5v11L12 22l9-4.5v-11zm0 2.2 6.4 3.2L12 10.6 5.6 7.4zM5 9.1l6 3v7.6l-6-3zm8 10.6v-7.6l6-3v7.6z"/></svg>';
-const cntOf = r => (Number(r.b1Count)||0)+(Number(r.b2Count)||0);
+let cur=null;
 function renderSummary(){
   const ym=today().slice(0,7), mon=H.filter(r=>(r.date||'').startsWith(ym));
   $('v-sDays').textContent=new Set(mon.map(r=>r.date)).size;
-  const mins=mon.reduce((s,r)=>s+(r.minutes||0),0);
-  $('v-sHours').textContent=(Math.round(mins/6)/10).toString();
+  $('v-sHours').textContent=(Math.round(mon.reduce((s,r)=>s+(r.minutes||0),0)/6)/10).toString();
   $('v-sCount').textContent=mon.reduce((s,r)=>s+cntOf(r),0).toLocaleString();
   const days=[]; for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i);
     const k=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    days.push({k, wd:'日月火水木金土'[d.getDay()], v:H.filter(r=>r.date===k).reduce((s,r)=>s+cntOf(r),0)}) }
+    days.push({wd:'日月火水木金土'[d.getDay()], v:H.filter(r=>r.date===k).reduce((s,r)=>s+cntOf(r),0)}) }
   const max=Math.max(1,...days.map(d=>d.v)), box=$('v-chart'); box.innerHTML='';
   days.forEach((d,i)=>{ const c=document.createElement('div'); const h=d.v?Math.max(4,d.v/max*88):0;
     c.innerHTML=`<i class="${d.v?'':'zero'}" style="height:${h}%"></i>${d.v?`<em style="bottom:calc(${h}% + 2px)">${d.v}</em>`:''}<span>${i===6?'今日':d.wd}</span>`;
     box.appendChild(c) });
   const wk=days.filter(d=>d.v); $('v-wkAvg').textContent = wk.length ? `平均 ${Math.round(wk.reduce((s,d)=>s+d.v,0)/wk.length)}個/日` : '';
 }
+function renderHist(){
+  const box=$('v-hist'); box.innerHTML='';
+  $('v-month').textContent=`（全${H.length}件）`;
+  if(!H.length) box.innerHTML='<div class="empty">まだ記録がありません</div>';
+  H.forEach(r=>{
+    const d=document.createElement('div'); d.className='row';
+    d.innerHTML=`<span class="dot">${ICON_BOX}</span><div class="t"><b></b><small></small></div>${S.sheetUrl&&!r.sheetSent?'<span class="badge ng">未送信</span>':''}<span class="chev">›</span>`;
+    d.querySelector('b').textContent=`${r.date}　${r.site}`;
+    d.querySelector('small').textContent=`${r.period}・${r.start}〜${r.end}・配完${cntOf(r)}個`+(Number(r.leftover)?`・持戻${r.leftover}`:'');
+    d.onclick=()=>openSheet(r); box.appendChild(d);
+  });
+  renderSummary();
+  const un=H.filter(r=>S.sheetUrl&&!r.sheetSent);
+  $('v-unsent').classList.toggle('hide',!un.length); $('v-unsentN').textContent=un.length;
+}
 function openSheet(r){ cur=r; $('sheet-title').textContent=`${r.date} ${r.site}`;
-  $('a-form').classList.toggle('hide',!formBase());
+  $('a-form').classList.toggle('hide',!formBase()); $('a-resend').classList.toggle('hide',!S.sheetUrl);
   $('sheet').classList.add('on'); $('sheet-bg').classList.add('on') }
 function closeSheet(){ $('sheet').classList.remove('on'); $('sheet-bg').classList.remove('on') }
 $('sheet-bg').onclick=closeSheet; $('a-cancel').onclick=closeSheet;
 $('a-copy').onclick=()=>{ copy(lineText(cur)); closeSheet() };
 $('a-form').onclick=()=>{ window.open(formPrefillUrl(cur),'_blank'); closeSheet() };
 $('a-load').onclick=()=>{ setRec(cur); closeSheet(); go('p-input') };
-$('a-resend').onclick=async()=>{ if(!S.sheetUrl) return toast('設定でシートURLを入れてください');
-  try{ await sendSheet(cur); cur.sheetSent=true; save(K.hist,H); renderHist(); toast('再送信しました') }catch(e){ toast('送れませんでした') } closeSheet() };
+$('a-resend').onclick=async()=>{ try{ await sendSheet(cur); cur.sheetSent=true; save(K.hist,H); renderHist(); toast('再送信しました') }catch(e){ toast('送れませんでした') } closeSheet() };
 $('a-del').onclick=()=>{ if(confirm('この記録を削除しますか？')){ H=H.filter(x=>x!==cur); save(K.hist,H); renderHist() } closeSheet() };
 $('b-resend').onclick=async()=>{ let ok=0;
   for(const r of H.filter(r=>!r.sheetSent)){ try{ await sendSheet(r); r.sheetSent=true; ok++ }catch(e){} }
   save(K.hist,H); renderHist(); toast(`${ok}件送信しました`) };
+function download(name, text, type){
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
 $('b-csv').onclick=()=>{
-  const head=['日付','名前','現場','稼働','開始','終了','勤務時間','1便個数','1便差異','2便個数','2便差異','研修'];
-  const rows=H.slice().reverse().map(r=>[r.date,r.name,r.site,r.period,r.start,r.end,fmtH(r.minutes),r.b1Count,r.b1Diff,r.b2Count,r.b2Diff,r.training]);
-  const csv='﻿'+[head,...rows].map(a=>a.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
-  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download=`日報_${today()}.csv`; a.click();
+  const head=['日付','現場','勤務区分','出勤','退勤','C1持出','C1持戻','C1配完','C2持出','C2持戻','C2配完','持ち戻り合計','未配','1便稼働','2便稼働','研修'];
+  const rows=H.map(r=>[r.date,r.site,r.period,r.start,r.end,r.c1p,r.c1r,r.c1c,r.c2p,r.c2r,r.c2c,r.leftover,r.undelivered,hm(r.b1min),hm(r.b2min),(r.training||[]).join('・')]);
+  download(`日報_${today()}.csv`, '﻿'+[head,...rows].map(a=>a.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\r\n'), 'text/csv');
+};
+
+/* ---------- バックアップ（GAS版のファイルも読み込める） ---------- */
+const parseHM = t => { if(!t) return null; const [h,m]=t.split(':').map(Number); return h*60+m };
+function fromGas(g){ // GAS版の履歴1件 → このアプリの形式
+  const P=g.workPeriod||'1日', D=Date.parse(g.savedAt)||Date.now();
+  return { id:D, date:g.workDate||'', name:S.name, site:g.site||'', siteIsOther:false, period:P, start:g.start||'', end:g.end||'',
+    minutes:minutes(g.start,g.end), c1p:g.c1p??'', c1r:g.c1Leftover??'', c1c:g.c1c??'', c2p:g.c2p??'', c2r:g.c2Leftover??'', c2c:g.c2c??'',
+    leftover:g.leftover??'0', undelivered:g.undelivered??'0', b1s:'', b1e:'', b1min:parseHM(g.b1Text), b2s:'', b2e:'', b2min:parseHM(g.b2Text),
+    training: g.training && g.training!=='なし' ? g.training.split('・') : [], sheetSent:true, formSent:true };
+}
+$('b-backup').onclick=()=>download(`walker_nippou_backup_${today()}.json`, JSON.stringify(H,null,1), 'application/json');
+$('b-restore').onclick=()=>$('f-restoreFile').click();
+$('f-restoreFile').onchange=async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{
+    const arr=JSON.parse(await f.text()); if(!Array.isArray(arr)) throw 0;
+    const recs=arr.map(x=>('workDate' in x||'c1Leftover' in x) ? fromGas(x) : x);
+    const known=new Set(H.map(r=>r.id)); const add=recs.filter(r=>!known.has(r.id));
+    H=H.concat(add).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.id-a.id);
+    save(K.hist,H); renderHist(); toast(`${add.length}件を追加しました`);
+  }catch(err){ toast('読み込めませんでした。ファイルを確認してください') }
+  e.target.value='';
 };
 
 /* ---------- 設定 ---------- */
 function fillSettings(){
   $('s-name').value=S.name; $('s-formUrl').value=S.formUrl; $('s-sheetUrl').value=S.sheetUrl;
-  $('s-autoForm').checked=S.autoForm; $('s-sites').value=S.sites; $('s-periods').value=S.periods;
+  $('s-autoForm').checked=S.autoForm; $('s-sites').value=S.sites;
 }
-['name','formUrl','sheetUrl','sites','periods'].forEach(k=>$('s-'+k).addEventListener('input',e=>{
-  S[k]=e.target.value.trim()==='' && (k==='sites'||k==='periods') ? DEFAULTS[k] : e.target.value.trim();
-  save(K.set,S); if(k==='sites') buildSites($('f-site').value); if(k==='periods') buildPeriods(); refresh(); renderHist() }));
+['name','formUrl','sheetUrl','sites'].forEach(k=>$('s-'+k).addEventListener('input',e=>{
+  S[k]=e.target.value.trim()==='' && k==='sites' ? DEFAULTS.sites : e.target.value.trim();
+  save(K.set,S); if(k==='sites') buildSites($('f-site').value); refresh(); renderHist() }));
 $('s-autoForm').onchange=e=>{ S.autoForm=e.target.checked; save(K.set,S); refresh() };
 $('b-testSheet').onclick=async()=>{ if(!S.sheetUrl) return toast('URLを入れてください');
   try{ await fetch(S.sheetUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({test:true})}); toast('送りました。シートに「テスト」行が出ればOK') }
   catch(e){ toast('送れませんでした。URLを確認してください') } };
 $('b-export').onclick=()=>copy(JSON.stringify(S));
 $('b-import').onclick=()=>{ const t=prompt('コピーした設定を貼り付けてください'); if(!t) return;
-  try{ S=Object.assign({},DEFAULTS,JSON.parse(t)); save(K.set,S); $('b-avatar').onclick=()=>go('p-set');
-{ const d=new Date(); $('v-today').textContent=`${d.getMonth()+1}月${d.getDate()}日 ${'日月火水木金土'[d.getDay()]}曜日` }
-fillSettings(); buildSites(); buildPeriods(); refresh(); toast('読み込みました') }
+  try{ S=Object.assign({},DEFAULTS,JSON.parse(t)); save(K.set,S); fillSettings(); buildSites(); refresh(); toast('読み込みました') }
   catch(e){ toast('形式が違います') } };
 
 /* ---------- タブ ---------- */
 function go(id){ document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.id===id));
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.p===id)); scrollTo(0,0) }
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.p));
+$('b-avatar').onclick=()=>go('p-set');
 
 /* ---------- 起動 ---------- */
-document.querySelectorAll('#p-input input,#p-input select').forEach(el=>{ el.addEventListener('input',refresh); el.addEventListener('change',refresh) });
-$('b-avatar').onclick=()=>go('p-set');
 { const d=new Date(); $('v-today').textContent=`${d.getMonth()+1}月${d.getDate()}日 ${'日月火水木金土'[d.getDay()]}曜日` }
-fillSettings(); buildSites(); buildPeriods();
+document.querySelectorAll('#p-input input,#p-input select').forEach(el=>{ el.addEventListener('input',refresh); el.addEventListener('change',refresh) });
+fillSettings(); buildSites(); buildPeriods(); buildTraining();
 const dr=load(K.draft,null);
-if(dr && dr.date===today()) setRec(dr); else setRec({date:today(), period:dr?.period, site:dr?.site, siteIsOther:dr?.siteIsOther});
+if(dr && dr.date===today() && 'c1p' in dr) setRec(dr);
+else setRec({date:today(), period:PERIODS.includes(dr?.period)?dr.period:'1日', site:dr?.site, siteIsOther:dr?.siteIsOther, start:'10:00', end:'17:00'});
 renderHist();
-if(!S.name) setTimeout(()=>{ go('p-set'); toast('はじめに名前とURLを設定してください') },300);
+if(!S.name) setTimeout(()=>{ go('p-set'); toast('はじめに氏名とフォームURLを設定してください') },300);
 </script>
 </body>
 </html>
