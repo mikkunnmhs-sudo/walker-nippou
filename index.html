@@ -110,6 +110,15 @@ h2{font-size:22px;font-weight:700;margin:26px 4px 10px}
 .hist .t{flex:1;min-width:0}
 .hist .t b{display:block;font-weight:600}
 .hist .t small{color:var(--sub);font-size:14px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist .row{padding-top:9px;padding-bottom:9px;align-items:flex-start}
+.hist .row>.dot,.hist .row>.chev,.hist .row>.badge{align-self:center}
+.hist .legs{display:flex;gap:6px;margin:5px 0 3px;flex-wrap:wrap}
+.hist .leg{font-size:13px;font-weight:600;padding:3px 8px;border-radius:7px;background:rgba(255,149,0,.14);font-variant-numeric:tabular-nums;white-space:nowrap}
+.hist .leg i{font-style:normal;color:var(--orange);margin-right:5px}
+.hist .leg.pm{background:rgba(88,86,214,.14)} .hist .leg.pm i{color:var(--indigo)}
+.sync{display:flex;align-items:center;gap:6px}
+.sync i{width:8px;height:8px;border-radius:50%;background:var(--green);flex:none}
+.sync i.off{background:var(--orange)}
 .badge{font-size:12px;padding:3px 8px;border-radius:10px;background:var(--fill);color:var(--sub);flex:none}
 .badge.ng{background:rgba(255,149,0,.15);color:var(--orange)}
 .chev{color:#c4c4c7;font-size:20px}
@@ -256,9 +265,10 @@ nav button.on{color:var(--pink)}
   <div id="v-unsent" class="hide">
     <button class="btn plain" id="b-resend">未送信をまとめてシートに送る（<span id="v-unsentN"></span>件）</button>
   </div>
-  <h2>記録 <span id="v-month" style="font-size:15px;color:var(--sub);font-weight:500"></span></h2>
+  <div class="hdr"><h2>記録 <span id="v-month" style="font-size:15px;color:var(--sub);font-weight:500"></span></h2><button class="link" id="b-sync">更新</button></div>
   <div class="group hist" id="v-hist"></div>
-  <p class="foot">タップでLINE文コピー・フォーム再表示・削除ができます。履歴はこのiPhoneの中だけに保存されます。</p>
+  <p class="foot sync" id="v-sync"></p>
+  <p class="foot">タップでLINE文コピー・フォーム再表示・削除ができます。</p>
 </section>
 
 <!-- ===== 設定 ===== -->
@@ -327,7 +337,7 @@ const SITES_DEFAULT = ['銀座','墨田','水天宮','馬喰町','人形町','�
 const PERIODS = ['午前のみ','午後のみ','1日'];
 const TRAININGS = [['午前のみ','午前'],['午後のみ','午後'],['1日','1日']];
 const DEFAULTS = { name:'', formUrl:'', sheetUrl:'', autoForm:false, sites:SITES_DEFAULT };
-const K = {set:'wn_settings', draft:'wn_draft', hist:'wn_history'};
+const K = {set:'wn_settings', draft:'wn_draft', hist:'wn_history', remote:'wn_remote'};
 const $ = id => document.getElementById(id);
 const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d } catch(e){ return d } };
 const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true } catch(e){ return false } };
@@ -495,7 +505,7 @@ $('b-send').onclick = async ()=>{
     else { if(win) win.location.href=formPrefillUrl(r); else location.href=formPrefillUrl(r); r.formSent=true }
   }
   if(S.sheetUrl){ try{ await sendSheet(r); r.sheetSent=true }catch(e){} }
-  H.unshift(r); save(K.hist,H); renderHist();
+  H.unshift(r); save(K.hist,H); renderHist(); if(r.sheetSent) syncHist();
   await copied;
   const msg=[]; if(S.autoForm&&formBase()) msg.push(r.formSent?'フォーム送信':'フォーム未送信');
   if(S.sheetUrl) msg.push(r.sheetSent?'シート追加':'シート未送信（電波？）');
@@ -508,34 +518,73 @@ $('b-clear').onclick=()=>{ if(confirm('入力をリセットしますか？')) s
 /* ---------- 履歴 ---------- */
 const ICON_BOX='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3 6.5v11L12 22l9-4.5v-11zm0 2.2 6.4 3.2L12 10.6 5.6 7.4zM5 9.1l6 3v7.6l-6-3zm8 10.6v-7.6l6-3v7.6z"/></svg>';
 let cur=null;
-function renderSummary(){
-  const ym=today().slice(0,7), mon=H.filter(r=>(r.date||'').startsWith(ym));
+/* 履歴はスプレッドシートから読み込んで、どの端末でも同じ内容を表示する */
+let R = load(K.remote, null), syncState = 'local'; // ok:シートと同期 / offline:読めない / local:シート未設定
+function fromSheet(x){ // シートの1行 → このアプリの形式
+  return { id:Number(x.id)||x.id, date:x.date||'', name:x.name||S.name, site:x.site||'', siteIsOther:!lines(S.sites).includes(x.site),
+    period:PERIODS.includes(x.period)?x.period:'1日', start:x.start||'', end:x.end||'', minutes:minutes(x.start,x.end),
+    c1p:x.c1p??'', c1r:x.c1r??'', c1c:x.c1c??'', c2p:x.c2p??'', c2r:x.c2r??'', c2c:x.c2c??'',
+    b1s:'', b1e:'', b1min:parseHM(x.b1Time), b2s:'', b2e:'', b2min:parseHM(x.b2Time),
+    leftover:x.leftover||'0', undelivered:x.undelivered||'0',
+    training: x.trainingText && x.trainingText!=='なし' ? x.trainingText.split('・') : [], sheetSent:true, formSent:true };
+}
+function all(){ // 表示用の履歴（シートの記録＋この端末のまだ送れていない記録）
+  if(!S.sheetUrl || !R) return H;
+  const mine = new Map(H.map(r=>[String(r.id), r]));
+  const list = R.records.map(x=>{ const l=mine.get(String(x.id)); return l ? {...l, sheetSent:true} : fromSheet(x) });
+  const ids = new Set(list.map(r=>String(r.id)));
+  H.forEach(r=>{ if(!ids.has(String(r.id)) && (!r.sheetSent || r.id > R.at)) list.push(r) });
+  return list.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(Number(b.id)||0)-(Number(a.id)||0));
+}
+async function syncHist(){
+  if(!S.sheetUrl){ syncState='local'; renderHist(); return }
+  try{
+    const j = await (await fetch(S.sheetUrl, {cache:'no-store'})).json();
+    if(!j || !Array.isArray(j.records)) throw 0;
+    R = {at:Date.now(), records:j.records}; save(K.remote, R); syncState='ok';
+  }catch(e){ syncState='offline' }
+  renderHist();
+}
+function renderSummary(A){
+  const ym=today().slice(0,7), mon=A.filter(r=>(r.date||'').startsWith(ym));
   $('v-sDays').textContent=new Set(mon.map(r=>r.date)).size;
   $('v-sHours').textContent=(Math.round(mon.reduce((s,r)=>s+(r.minutes||0),0)/6)/10).toString();
   $('v-sCount').textContent=mon.reduce((s,r)=>s+cntOf(r),0).toLocaleString();
   const days=[]; for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i);
     const k=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    days.push({wd:'日月火水木金土'[d.getDay()], v:H.filter(r=>r.date===k).reduce((s,r)=>s+cntOf(r),0)}) }
+    days.push({wd:'日月火水木金土'[d.getDay()], v:A.filter(r=>r.date===k).reduce((s,r)=>s+cntOf(r),0)}) }
   const max=Math.max(1,...days.map(d=>d.v)), box=$('v-chart'); box.innerHTML='';
   days.forEach((d,i)=>{ const c=document.createElement('div'); const h=d.v?Math.max(4,d.v/max*88):0;
     c.innerHTML=`<i class="${d.v?'':'zero'}" style="height:${h}%"></i>${d.v?`<em style="bottom:calc(${h}% + 2px)">${d.v}</em>`:''}<span>${i===6?'今日':d.wd}</span>`;
     box.appendChild(c) });
   const wk=days.filter(d=>d.v); $('v-wkAvg').textContent = wk.length ? `平均 ${Math.round(wk.reduce((s,d)=>s+d.v,0)/wk.length)}個/日` : '';
 }
+function legHtml(cls, label, min, cnt){
+  const l=document.createElement('span'); l.className='leg '+cls;
+  l.innerHTML=`<i>${label}</i>`; l.append(`${min==null?'--:--':hm(min)}・${cnt===''||cnt==null?'--':cnt}個`);
+  return l;
+}
 function renderHist(){
-  const box=$('v-hist'); box.innerHTML='';
-  $('v-month').textContent=`（全${H.length}件）`;
-  if(!H.length) box.innerHTML='<div class="empty">まだ記録がありません</div>';
-  H.forEach(r=>{
-    const d=document.createElement('div'); d.className='row';
-    d.innerHTML=`<span class="dot">${ICON_BOX}</span><div class="t"><b></b><small></small></div>${S.sheetUrl&&!r.sheetSent?'<span class="badge ng">未送信</span>':''}<span class="chev">›</span>`;
+  const A=all(), box=$('v-hist'); box.innerHTML='';
+  $('v-month').textContent=`（全${A.length}件）`;
+  if(!A.length) box.innerHTML='<div class="empty">まだ記録がありません</div>';
+  A.forEach(r=>{
+    const d=document.createElement('div'), sh=shows(r.period); d.className='row';
+    d.innerHTML=`<span class="dot">${ICON_BOX}</span><div class="t"><b></b><div class="legs"></div><small></small></div>${S.sheetUrl&&!r.sheetSent?'<span class="badge ng">未送信</span>':''}<span class="chev">›</span>`;
     d.querySelector('b').textContent=`${r.date}　${r.site}`;
-    d.querySelector('small').textContent=`${r.period}・${r.start}〜${r.end}・配完${cntOf(r)}個`+(Number(r.leftover)?`・持戻${r.leftover}`:'');
+    const legs=d.querySelector('.legs');
+    if(sh.b1) legs.append(legHtml('am','午前', r.b1min, r.c1c));
+    if(sh.b2) legs.append(legHtml('pm','午後', r.b2min, r.c2c));
+    d.querySelector('small').textContent=`${r.period}・${r.start}〜${r.end}`+(Number(r.leftover)?`・持戻${r.leftover}`:'')+(Number(r.undelivered)?`・未配${r.undelivered}`:'');
     d.onclick=()=>openSheet(r); box.appendChild(d);
   });
-  renderSummary();
+  renderSummary(A);
   const un=H.filter(r=>S.sheetUrl&&!r.sheetSent);
   $('v-unsent').classList.toggle('hide',!un.length); $('v-unsentN').textContent=un.length;
+  const sy=$('v-sync');
+  if(syncState==='ok') sy.innerHTML='<i></i>スプレッドシートと同期中（どの端末でも同じ履歴）';
+  else if(syncState==='offline') sy.innerHTML='<i class="off"></i>シートから読み込めませんでした（電波がない、またはApps Scriptが未更新）。「更新」で再読み込みできます'+(R?'（前回読み込んだ内容を表示中）':'');
+  else sy.innerHTML='<i class="off"></i>この端末の記録だけを表示中（設定でスプレッドシートのURLを入れると全端末で共有できます）';
 }
 function openSheet(r){ cur=r; $('sheet-title').textContent=`${r.date} ${r.site}`;
   $('a-form').classList.toggle('hide',!formBase()); $('a-resend').classList.toggle('hide',!S.sheetUrl);
@@ -545,8 +594,16 @@ $('sheet-bg').onclick=closeSheet; $('a-cancel').onclick=closeSheet;
 $('a-copy').onclick=()=>{ copy(lineText(cur)); closeSheet() };
 $('a-form').onclick=()=>{ window.open(formPrefillUrl(cur),'_blank'); closeSheet() };
 $('a-load').onclick=()=>{ setRec(cur); closeSheet(); go('p-input') };
-$('a-resend').onclick=async()=>{ try{ await sendSheet(cur); cur.sheetSent=true; save(K.hist,H); renderHist(); toast('再送信しました') }catch(e){ toast('送れませんでした') } closeSheet() };
-$('a-del').onclick=()=>{ if(confirm('この記録を削除しますか？')){ H=H.filter(x=>x!==cur); save(K.hist,H); renderHist() } closeSheet() };
+$('a-resend').onclick=async()=>{ try{ await sendSheet(cur); H.forEach(x=>{ if(String(x.id)===String(cur.id)) x.sheetSent=true }); save(K.hist,H); toast('再送信しました'); syncHist() }catch(e){ toast('送れませんでした') } closeSheet() };
+$('a-del').onclick=async()=>{
+  const id=String(cur.id), onSheet = syncState==='ok' && R && R.records.some(x=>String(x.id)===id);
+  if(!confirm(onSheet ? 'この記録を削除しますか？（スプレッドシートと全部の端末から消えます）' : 'この記録を削除しますか？')) return closeSheet();
+  if(onSheet){
+    try{ await fetch(S.sheetUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'delete', id:cur.id})}) }
+    catch(e){ toast('削除できませんでした（電波を確認してください）'); return closeSheet() }
+    R.records=R.records.filter(x=>String(x.id)!==id); save(K.remote,R);
+  }
+  H=H.filter(x=>String(x.id)!==id); save(K.hist,H); renderHist(); closeSheet() };
 $('b-resend').onclick=async()=>{ let ok=0;
   for(const r of H.filter(r=>!r.sheetSent)){ try{ await sendSheet(r); r.sheetSent=true; ok++ }catch(e){} }
   save(K.hist,H); renderHist(); toast(`${ok}件送信しました`) };
@@ -556,7 +613,7 @@ function download(name, text, type){
 }
 $('b-csv').onclick=()=>{
   const head=['日付','現場','勤務区分','出勤','退勤','C1持出','C1持戻','C1配完','C2持出','C2持戻','C2配完','持ち戻り合計','未配','1便稼働','2便稼働','研修'];
-  const rows=H.map(r=>[r.date,r.site,r.period,r.start,r.end,r.c1p,r.c1r,r.c1c,r.c2p,r.c2r,r.c2c,r.leftover,r.undelivered,hm(r.b1min),hm(r.b2min),(r.training||[]).join('・')]);
+  const rows=all().map(r=>[r.date,r.site,r.period,r.start,r.end,r.c1p,r.c1r,r.c1c,r.c2p,r.c2r,r.c2c,r.leftover,r.undelivered,hm(r.b1min),hm(r.b2min),(r.training||[]).join('・')]);
   download(`日報_${today()}.csv`, '﻿'+[head,...rows].map(a=>a.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\r\n'), 'text/csv');
 };
 
@@ -569,7 +626,7 @@ function fromGas(g){ // GAS版の履歴1件 → このアプリの形式
     leftover:g.leftover??'0', undelivered:g.undelivered??'0', b1s:'', b1e:'', b1min:parseHM(g.b1Text), b2s:'', b2e:'', b2min:parseHM(g.b2Text),
     training: g.training && g.training!=='なし' ? g.training.split('・') : [], sheetSent:true, formSent:true };
 }
-$('b-backup').onclick=()=>download(`walker_nippou_backup_${today()}.json`, JSON.stringify(H,null,1), 'application/json');
+$('b-backup').onclick=()=>download(`walker_nippou_backup_${today()}.json`, JSON.stringify(all(),null,1), 'application/json');
 $('b-restore').onclick=()=>$('f-restoreFile').click();
 $('f-restoreFile').onchange=async e=>{
   const f=e.target.files[0]; if(!f) return;
@@ -590,7 +647,7 @@ function fillSettings(){
 }
 ['name','formUrl','sheetUrl','sites'].forEach(k=>$('s-'+k).addEventListener('input',e=>{
   S[k]=e.target.value.trim()==='' && k==='sites' ? DEFAULTS.sites : e.target.value.trim();
-  save(K.set,S); if(k==='sites') buildSites($('f-site').value); refresh(); renderHist() }));
+  save(K.set,S); if(k==='sites') buildSites($('f-site').value); if(k==='sheetUrl'){ R=null; save(K.remote,null); syncHist() } refresh(); renderHist() }));
 $('s-autoForm').onchange=e=>{ S.autoForm=e.target.checked; save(K.set,S); refresh() };
 $('b-testSheet').onclick=async()=>{ if(!S.sheetUrl) return toast('URLを入れてください');
   try{ await fetch(S.sheetUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({test:true})}); toast('送りました。シートに「テスト」行が出ればOK') }
@@ -603,7 +660,9 @@ $('b-import').onclick=()=>{ const t=prompt('コピーした設定、または設
 /* ---------- タブ ---------- */
 function go(id){ document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.id===id));
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.p===id)); scrollTo(0,0) }
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.p));
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{ go(b.dataset.p); if(b.dataset.p==='p-hist') syncHist() });
+$('b-sync').onclick=()=>{ $('v-sync').textContent='読み込み中…'; syncHist() };
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') syncHist() });
 $('b-avatar').onclick=()=>go('p-set');
 
 /* ---------- 起動 ---------- */
@@ -613,7 +672,7 @@ fillSettings(); buildSites(); buildPeriods(); buildTraining();
 const dr=load(K.draft,null);
 if(dr && dr.date===today() && 'c1p' in dr) setRec(dr);
 else setRec({date:today(), period:PERIODS.includes(dr?.period)?dr.period:'1日', site:dr?.site, siteIsOther:dr?.siteIsOther, start:'10:00', end:'17:00'});
-renderHist();
+renderHist(); syncHist();
 function setupFrom(t){
   try{ if(!applyCfg(parseCfg(String(t).trim()), true)) throw 0;
     save(K.set,S); fillSettings(); buildSites(); refresh(); renderHist(); $('setup-card').classList.add('hide'); toast('設定を読み込みました');
