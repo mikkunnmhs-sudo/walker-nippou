@@ -164,6 +164,11 @@ nav button.on{color:var(--pink)}
     <button class="avatar" id="b-avatar" aria-label="設定">?</button>
   </div>
 
+  <div class="card c-orange hide" id="edit-card">
+    <div class="ch">記録を編集中</div>
+    <p style="margin:4px 0 10px;font-size:15px;line-height:1.5"><b id="v-editing"></b> の記録を直しています。直したら下の「変更を保存」を押してください。</p>
+    <button class="btn plain" id="b-editCancel" style="margin-top:0">編集をやめる</button>
+  </div>
   <div class="card c-pink hide" id="setup-card">
     <div class="ch">はじめに設定</div>
     <p style="margin:4px 0 0;font-size:15px;line-height:1.5">送られてきた<b>設定用リンク</b>を長押しでコピーしてから、下のボタンを押してください。</p>
@@ -268,7 +273,7 @@ nav button.on{color:var(--pink)}
   <div class="hdr"><h2>記録 <span id="v-month" style="font-size:15px;color:var(--sub);font-weight:500"></span></h2><button class="link" id="b-sync">更新</button></div>
   <div class="group hist" id="v-hist"></div>
   <p class="foot sync" id="v-sync"></p>
-  <p class="foot">タップでLINE文コピー・フォーム再表示・削除ができます。</p>
+  <p class="foot">タップで編集・LINE文コピー・フォーム再表示・削除ができます。</p>
 </section>
 
 <!-- ===== 設定 ===== -->
@@ -318,7 +323,7 @@ nav button.on{color:var(--pink)}
     <button id="a-copy">LINE文をコピー</button>
     <button id="a-form">フォームを開く（記入済み）</button>
     <button id="a-resend">スプレッドシートに再送信</button>
-    <button id="a-load">この内容を入力画面に読み込む</button>
+    <button id="a-load">この記録を編集する</button>
     <button class="del" id="a-del">削除</button>
   </div>
   <div class="group cancel"><button id="a-cancel" style="font-weight:600">キャンセル</button></div>
@@ -379,7 +384,7 @@ const shows = p => ({b1: p!=='午後のみ', b2: p!=='午前のみ'});
 const cntOf = r => (Number(r.c1c)||0)+(Number(r.c2c)||0);
 
 /* ---------- 入力画面 ---------- */
-let period = '1日', training = [];
+let period = '1日', training = [], editing = null;
 function buildSites(sel){
   const s=$('f-site'); s.innerHTML='';
   [...lines(S.sites), OTHER].forEach(v=>{ const o=document.createElement('option'); o.value=o.textContent=v; s.appendChild(o) });
@@ -398,7 +403,7 @@ function buildTraining(){
 }
 function getRec(){
   const sh=shows(period), isOther=$('f-site').value===OTHER;
-  const r = { id:Date.now(), date:$('f-date').value, name:S.name,
+  const r = { id:editing?editing.id:Date.now(), date:$('f-date').value, name:S.name,
     site: isOther ? $('f-siteOther').value.trim() : $('f-site').value, siteIsOther:isOther,
     period, start:$('f-start').value, end:$('f-end').value, undelivered:num($('f-undelivered').value)||'0', training:[...training] };
   r.minutes = minutes(r.start, r.end);
@@ -409,6 +414,8 @@ function getRec(){
     r[`c${n}c`] = on && p!=='' ? String(Number(p)-Number(rr)) : '';
     r[`b${n}s`] = on ? $(`f-b${n}s`).value : ''; r[`b${n}e`] = on ? $(`f-b${n}e`).value : '';
     r[`b${n}min`] = on ? minutes(r[`b${n}s`], r[`b${n}e`]) : null;
+    // 編集中で便の開始・終了が空なら、元の稼働時間をそのまま使う（別の端末で作った記録など）
+    if(on && editing && !r[`b${n}s`] && !r[`b${n}e`] && editing[`b${n}min`]!=null) r[`b${n}min`] = editing[`b${n}min`];
   });
   r.leftover = String((Number(r.c1r)||0)+(Number(r.c2r)||0));
   return r;
@@ -494,9 +501,29 @@ async function copy(t, quiet){
   if(!quiet) toast('コピーしました');
 }
 
+function setEditing(r){
+  editing = r;
+  $('edit-card').classList.toggle('hide', !r);
+  if(r) $('v-editing').textContent = `${r.date} ${r.site}`;
+  $('b-send').textContent = r ? '変更を保存' : '日報を作成する';
+}
+async function saveEdit(r){ // 編集：同じ記録IDでシートの行を上書きする（フォームは開かない）
+  r.formSent = true; r.sheetSent = false;
+  const copied = copy(lineText(r), true);
+  if(S.sheetUrl){ try{ await sendSheet(r); r.sheetSent=true }catch(e){} }
+  const i = H.findIndex(x=>String(x.id)===String(r.id));
+  if(i>=0) H[i]=r; else H.unshift(r);
+  save(K.hist,H);
+  await copied;
+  setEditing(null); setRec({date:today(), period, site:r.siteIsOther?OTHER:r.site, start:'10:00', end:'17:00'});
+  go('p-hist'); renderHist(); if(r.sheetSent) syncHist();
+  toast(S.sheetUrl && !r.sheetSent ? '保存しました（シートは未送信：電波？）' : '記録を更新しました（LINE文もコピー済み）');
+}
+$('b-editCancel').onclick=()=>{ setEditing(null); setRec({date:today(), period, site:$('f-site').value, start:'10:00', end:'17:00'}); go('p-hist') };
 $('b-send').onclick = async ()=>{
   const r=getRec(), err=missing(r);
   if(err){ $('v-warn').textContent=err; $('v-warn').classList.remove('hide'); return toast(err) }
+  if(editing) return saveEdit(r);
   r.sheetSent=false; r.formSent=false;
   const copied = copy(lineText(r), true); // iOSは押した直後でないとコピーできないので先に
   const win = (formBase() && !S.autoForm) ? window.open('about:blank','_blank') : null; // 同じ理由で先に開く
@@ -513,7 +540,7 @@ $('b-send').onclick = async ()=>{
 };
 $('b-copy').onclick=()=>copy(lineText(getRec()));
 $('b-draft').onclick=()=>toast(save(K.draft,getRec())?'下書きを保存しました':'保存に失敗しました');
-$('b-clear').onclick=()=>{ if(confirm('入力をリセットしますか？')) setRec({date:today(), period, site:$('f-site').value}) };
+$('b-clear').onclick=()=>{ if(confirm('入力をリセットしますか？')) setEditing(null), setRec({date:today(), period, site:$('f-site').value}) };
 
 /* ---------- 履歴 ---------- */
 const ICON_BOX='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3 6.5v11L12 22l9-4.5v-11zm0 2.2 6.4 3.2L12 10.6 5.6 7.4zM5 9.1l6 3v7.6l-6-3zm8 10.6v-7.6l6-3v7.6z"/></svg>';
@@ -606,7 +633,7 @@ function closeSheet(){ $('sheet').classList.remove('on'); $('sheet-bg').classLis
 $('sheet-bg').onclick=closeSheet; $('a-cancel').onclick=closeSheet;
 $('a-copy').onclick=()=>{ copy(lineText(cur)); closeSheet() };
 $('a-form').onclick=()=>{ window.open(formPrefillUrl(cur),'_blank'); closeSheet() };
-$('a-load').onclick=()=>{ setRec(cur); closeSheet(); go('p-input') };
+$('a-load').onclick=()=>{ setEditing(cur); setRec(cur); closeSheet(); go('p-input') };
 $('a-resend').onclick=async()=>{ try{ await sendSheet(cur); H.forEach(x=>{ if(String(x.id)===String(cur.id)) x.sheetSent=true }); save(K.hist,H); toast('再送信しました'); syncHist() }catch(e){ toast('送れませんでした') } closeSheet() };
 $('a-del').onclick=async()=>{
   const id=String(cur.id), onSheet = syncState==='ok' && R && R.records.some(x=>String(x.id)===id);
