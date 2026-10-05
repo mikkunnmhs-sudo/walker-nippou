@@ -42,7 +42,7 @@ function doPost(e) {
 }
 
 // アプリの履歴タブが、どの端末からでもシートの記録を読めるようにする
-function doGet() {
+function doGet(e) {
   const sh = getSheet_();
   const last = sh.getLastRow();
   const rows = last > 1 ? sh.getRange(2, 1, last - 1, HEADERS.length).getDisplayValues() : [];
@@ -53,8 +53,14 @@ function doGet() {
       KEYS.forEach((k, i) => o[k] = r[i]);
       return o;
     });
-  return ContentService.createTextOutput(JSON.stringify({ ok: true, version: 2, records: records }))
-    .setMimeType(ContentService.MimeType.JSON);
+  const json = JSON.stringify({ ok: true, version: 2, records: records });
+  // アプリが<script>で読み込むとき用（callback=関数名 が付いてきたら、その関数を呼ぶ形で返す）
+  const cb = e && e.parameter && e.parameter.callback;
+  if (cb && /^[A-Za-z_$][\w$]*$/.test(cb)) {
+    return ContentService.createTextOutput(cb + '(' + json + ')')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
 }
 
 function findRow_(sh, id) {

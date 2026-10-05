@@ -536,13 +536,26 @@ function all(){ // 表示用の履歴（シートの記録＋この端末のま�
   H.forEach(r=>{ if(!ids.has(String(r.id)) && (!r.sheetSent || r.id > R.at)) list.push(r) });
   return list.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(Number(b.id)||0)-(Number(a.id)||0));
 }
+// シートから読み込む。fetchでダメなら<script>読み込み（JSONP）で再挑戦する
+// （Googleにログインした状態でしか開けない設定のApps Scriptでも読めるように）
+function jsonp(url){
+  return new Promise((ok, ng)=>{
+    const cb='wnCb'+Date.now(), sc=document.createElement('script');
+    const done=()=>{ delete window[cb]; sc.remove(); clearTimeout(t) };
+    const t=setTimeout(()=>{ done(); ng(new Error('timeout')) }, 15000);
+    window[cb]=j=>{ done(); ok(j) };
+    sc.onerror=()=>{ done(); ng(new Error('load')) };
+    sc.src=url+(url.includes('?')?'&':'?')+'callback='+cb+'&t='+Date.now();
+    document.head.appendChild(sc);
+  });
+}
 async function syncHist(){
   if(!S.sheetUrl){ syncState='local'; renderHist(); return }
-  try{
-    const j = await (await fetch(S.sheetUrl, {cache:'no-store'})).json();
-    if(!j || !Array.isArray(j.records)) throw 0;
-    R = {at:Date.now(), records:j.records}; save(K.remote, R); syncState='ok';
-  }catch(e){ syncState='offline' }
+  let j=null;
+  try{ j = await (await fetch(S.sheetUrl, {cache:'no-store'})).json() }catch(e){}
+  if(!j || !Array.isArray(j.records)){ try{ j = await jsonp(S.sheetUrl) }catch(e){ j=null } }
+  if(j && Array.isArray(j.records)){ R = {at:Date.now(), records:j.records}; save(K.remote, R); syncState='ok' }
+  else syncState='offline';
   renderHist();
 }
 function renderSummary(A){
