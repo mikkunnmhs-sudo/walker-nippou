@@ -476,7 +476,7 @@ function setRec(r){
   refresh();
 }
 function lineText(r){ // GAS版と同じ形式
-  const sh=shows(r.period), L=[r.name, `配達地域: ${r.site||'未選択'}`, ''];
+  const sh=shows(r.period), L=[r.name, ''];
   L.push(`稼働開始時間: ${r.start}`, `稼働終了時間: ${r.end}`);
   if(sh.b1) L.push(`C1持出個数:${r.c1p}`);
   if(sh.b2) L.push(`C2持出個数:${r.c2p}`);
