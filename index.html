@@ -153,6 +153,9 @@ nav button.on{color:var(--pink)}
 .autov u{text-decoration:none;font-size:13px;color:var(--sub);margin-left:2px}
 .warn{color:var(--red);font-size:13px;margin:6px 0 0}
 .sub2{font-size:12px;font-weight:600;color:var(--sub);margin:12px 0 0}
+.timer-status{font-size:14px;color:var(--sub);margin:8px 0 0;font-variant-numeric:tabular-nums}
+.timer-actions .btn{margin:0;background:var(--tile);color:var(--blue)}
+.timer-actions .btn:disabled{opacity:.4}
 </style>
 </head>
 <body>
@@ -180,7 +183,7 @@ nav button.on{color:var(--pink)}
     <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="7.5" r="4.5"/><path d="M3 21c0-4.4 4-7 9-7s9 2.6 9 7z"/></svg>基本情報</div>
     <div class="row"><span>氏名</span><span class="val" id="v-name">未設定</span></div>
     <div class="row"><span>勤務日</span><input type="date" id="f-date"></div>
-    <div class="row"><span>現場</span><select id="f-site"></select></div>
+    <div class="row"><span>配達地域（必須）</span><select id="f-site"></select></div>
     <div class="row hide" id="row-other"><span>現場名</span><input id="f-siteOther" placeholder="入力"></div>
   </div>
 
@@ -206,6 +209,9 @@ nav button.on{color:var(--pink)}
     </div>
     <div class="row" style="margin-top:6px"><span>配完個数</span><span class="autov num" id="v-c1c">--</span></div>
     <p class="sub2">1便 稼働時間</p>
+    <div class="pair timer-actions"><button class="btn" id="b-timer1Start">▶ スタート</button><button class="btn" id="b-timer1Stop">■ ストップ</button></div>
+    <p class="timer-status" id="v-timer1"></p>
+    <p class="foot">押した時刻を記録します。下の時刻は手入力でも直せます。</p>
     <div class="pair" style="margin-top:6px">
       <label class="tile"><small>開始</small><input type="time" id="f-b1s"></label>
       <label class="tile"><small>終了</small><input type="time" id="f-b1e"></label>
@@ -220,6 +226,9 @@ nav button.on{color:var(--pink)}
     </div>
     <div class="row" style="margin-top:6px"><span>配完個数</span><span class="autov num" id="v-c2c">--</span></div>
     <p class="sub2">2便 稼働時間</p>
+    <div class="pair timer-actions"><button class="btn" id="b-timer2Start">▶ スタート</button><button class="btn" id="b-timer2Stop">■ ストップ</button></div>
+    <p class="timer-status" id="v-timer2"></p>
+    <p class="foot">押した時刻を記録します。下の時刻は手入力でも直せます。</p>
     <div class="pair" style="margin-top:6px">
       <label class="tile"><small>開始</small><input type="time" id="f-b2s"></label>
       <label class="tile"><small>終了</small><input type="time" id="f-b2e"></label>
@@ -250,6 +259,7 @@ nav button.on{color:var(--pink)}
   <p class="foot" id="v-sendinfo"></p>
   <button class="btn plain" id="b-copy">LINE報告文をコピー</button>
   <button class="btn plain" id="b-draft">下書き保存</button>
+  <p class="foot" id="v-draft" aria-live="polite"></p>
   <p class="foot">入力中は自動で下書き保存されます。午前だけ終わった時などは「下書き保存」を押しておくと確実です。</p>
   <button class="btn plain" id="b-clear" style="color:var(--red)">入力をリセット</button>
 </section>
@@ -385,8 +395,42 @@ const cntOf = r => (Number(r.c1c)||0)+(Number(r.c2c)||0);
 
 /* ---------- 入力画面 ---------- */
 let period = '1日', training = [], editing = null;
+let timers = {}, draftReady = false, sending = false;
+const nowTime = () => { const d=new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}` };
+function saveDraft(){
+  if(!draftReady) return true;
+  const ok=save(K.draft,{...getRec(), editing:editing ? {...editing} : null, timers:{...timers}, savedAt:Date.now()});
+  $('v-draft').textContent=ok ? 'この端末に下書き保存済み' : '下書きを保存できません。端末の空き容量・ブラウザ設定を確認してください';
+  return ok;
+}
+function resetInput(){ setEditing(null); setRec({date:today(),period,site:'',start:'10:00',end:'17:00'}) }
+function renderTimers(){
+  [1,2].forEach(n=>{
+    const t=timers[n], running=!!t?.startedAt;
+    $(`b-timer${n}Start`).disabled=running;
+    $(`b-timer${n}Stop`).disabled=!running;
+    $(`b-timer${n}Start`).textContent=t&&!running?'▶ 計り直す':'▶ スタート';
+    if(running){ const sec=Math.max(0,Math.floor((Date.now()-t.startedAt)/1000));
+      $(`v-timer${n}`).textContent=`計測中 ${Math.floor(sec/3600)}:${pad(Math.floor(sec/60)%60)}:${pad(sec%60)}（画面を閉じても継続）`;
+    }else $(`v-timer${n}`).textContent=t?.finished?'計測終了（報告は10分単位）':'未計測';
+  });
+}
+[1,2].forEach(n=>{
+  $(`b-timer${n}Start`).onclick=()=>{
+    if($('f-date').value!==today()) return toast('計測は今日の勤務日で使ってください');
+    if(($(`f-b${n}s`).value||$(`f-b${n}e`).value)&&!confirm(`${n}便の時刻を消して計り直しますか？`)) return;
+    timers[n]={startedAt:Date.now()}; $(`f-b${n}s`).value=nowTime(); $(`f-b${n}e`).value=''; refresh();
+  };
+  $(`b-timer${n}Stop`).onclick=()=>{
+    if(!timers[n]?.startedAt) return;
+    $(`f-b${n}e`).value=nowTime(); timers[n]={finished:true}; refresh();
+  };
+  ['s','e'].forEach(k=>$(`f-b${n}${k}`).addEventListener('input',()=>{ delete timers[n]; refresh() }));
+});
+setInterval(renderTimers,1000);
 function buildSites(sel){
   const s=$('f-site'); s.innerHTML='';
+  const placeholder=document.createElement('option'); placeholder.value=''; placeholder.textContent='選択してください'; s.appendChild(placeholder);
   [...lines(S.sites), OTHER].forEach(v=>{ const o=document.createElement('option'); o.value=o.textContent=v; s.appendChild(o) });
   if (sel && [...s.options].some(o=>o.value===sel)) s.value = sel;
 }
@@ -421,6 +465,7 @@ function getRec(){
   return r;
 }
 function setRec(r){
+  timers = r.timers && typeof r.timers==='object' ? {...r.timers} : {};
   $('f-date').value=r.date||today(); buildSites(r.siteIsOther?OTHER:r.site);
   $('f-siteOther').value=r.siteIsOther?r.site:'';
   period = PERIODS.includes(r.period) ? r.period : period; buildPeriods();
@@ -431,7 +476,7 @@ function setRec(r){
   refresh();
 }
 function lineText(r){ // GAS版と同じ形式
-  const sh=shows(r.period), L=[r.name, ''];
+  const sh=shows(r.period), L=[r.name, `配達地域: ${r.site||'未選択'}`, ''];
   L.push(`稼働開始時間: ${r.start}`, `稼働終了時間: ${r.end}`);
   if(sh.b1) L.push(`C1持出個数:${r.c1p}`);
   if(sh.b2) L.push(`C2持出個数:${r.c2p}`);
@@ -442,8 +487,9 @@ function lineText(r){ // GAS版と同じ形式
 }
 function missing(r){
   if(!S.name) return '設定タブで氏名を入れてください';
-  if(!r.site) return '現場名を入れてください';
+  if(!r.site) return '配達地域を選択してください（その他は地域名を入力）';
   const sh=shows(r.period);
+  if([1,2].some(n=>sh['b'+n]&&timers[n]?.startedAt)) return '計測中の便をストップしてから送信してください';
   if((sh.b1&&r.c1p==='')||(sh.b2&&r.c2p==='')) return '配送実績の持出個数を入力してください';
   return '';
 }
@@ -466,7 +512,7 @@ function refresh(){
   const parts=[]; if(formBase()) parts.push(S.autoForm?'フォームに自動送信':'記入済みフォームを開く'); if(S.sheetUrl) parts.push('シートに追加');
   $('v-sendinfo').textContent = 'ボタンで：LINE文コピー'+(parts.length?'＋'+parts.join('＋'):'')+'＋履歴に保存'+(formBase()?'':'（フォームURLが未設定です）');
   if(!$('v-warn').classList.contains('hide') && !missing(r)) $('v-warn').classList.add('hide');
-  save(K.draft, r);
+  renderTimers(); saveDraft();
 }
 
 /* ---------- 送信 ---------- */
@@ -515,15 +561,18 @@ async function saveEdit(r){ // 編集：同じ記録IDでシートの行を上�
   if(i>=0) H[i]=r; else H.unshift(r);
   save(K.hist,H);
   await copied;
-  setEditing(null); setRec({date:today(), period, site:r.siteIsOther?OTHER:r.site, start:'10:00', end:'17:00'});
+  resetInput();
   go('p-hist'); renderHist(); if(r.sheetSent) syncHist();
   toast(S.sheetUrl && !r.sheetSent ? '保存しました（シートは未送信：電波？）' : '記録を更新しました（LINE文もコピー済み）');
 }
-$('b-editCancel').onclick=()=>{ setEditing(null); setRec({date:today(), period, site:$('f-site').value, start:'10:00', end:'17:00'}); go('p-hist') };
+$('b-editCancel').onclick=()=>{ resetInput(); go('p-hist') };
 $('b-send').onclick = async ()=>{
+  if(sending) return;
   const r=getRec(), err=missing(r);
   if(err){ $('v-warn').textContent=err; $('v-warn').classList.remove('hide'); return toast(err) }
-  if(editing) return saveEdit(r);
+  sending=true; $('b-send').disabled=true;
+  try{
+  if(editing) return await saveEdit(r);
   r.sheetSent=false; r.formSent=false;
   const copied = copy(lineText(r), true); // iOSは押した直後でないとコピーできないので先に
   const win = (formBase() && !S.autoForm) ? window.open('about:blank','_blank') : null; // 同じ理由で先に開く
@@ -532,15 +581,17 @@ $('b-send').onclick = async ()=>{
     else { if(win) win.location.href=formPrefillUrl(r); else location.href=formPrefillUrl(r); r.formSent=true }
   }
   if(S.sheetUrl){ try{ await sendSheet(r); r.sheetSent=true }catch(e){} }
-  H.unshift(r); save(K.hist,H); renderHist(); if(r.sheetSent) syncHist();
+  H.unshift(r); const stored=save(K.hist,H); renderHist(); if(r.sheetSent) syncHist();
+  if(stored) resetInput(); else toast('履歴を端末に保存できません。入力を残しています');
   await copied;
   const msg=[]; if(S.autoForm&&formBase()) msg.push(r.formSent?'フォーム送信':'フォーム未送信');
   if(S.sheetUrl) msg.push(r.sheetSent?'シート追加':'シート未送信（電波？）');
   toast('保存＆LINE文コピー済み'+(msg.length?' / '+msg.join(' / '):''));
+  }finally{ sending=false; $('b-send').disabled=false }
 };
 $('b-copy').onclick=()=>copy(lineText(getRec()));
-$('b-draft').onclick=()=>toast(save(K.draft,getRec())?'下書きを保存しました':'保存に失敗しました');
-$('b-clear').onclick=()=>{ if(confirm('入力をリセットしますか？')) setEditing(null), setRec({date:today(), period, site:$('f-site').value}) };
+$('b-draft').onclick=()=>toast(saveDraft()?'下書きを保存しました':'保存に失敗しました');
+$('b-clear').onclick=()=>{ if(confirm('入力をリセットしますか？')) resetInput() };
 
 /* ---------- 履歴 ---------- */
 const ICON_BOX='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3 6.5v11L12 22l9-4.5v-11zm0 2.2 6.4 3.2L12 10.6 5.6 7.4zM5 9.1l6 3v7.6l-6-3zm8 10.6v-7.6l6-3v7.6z"/></svg>';
@@ -702,7 +753,8 @@ function go(id){ document.querySelectorAll('.page').forEach(p=>p.classList.toggl
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.p===id)); scrollTo(0,0) }
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{ go(b.dataset.p); if(b.dataset.p==='p-hist') syncHist() });
 $('b-sync').onclick=()=>{ $('v-sync').textContent='読み込み中…'; syncHist() };
-document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') syncHist() });
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ renderTimers(); syncHist() }else saveDraft() });
+window.addEventListener('pagehide',saveDraft);
 $('b-avatar').onclick=()=>go('p-set');
 
 /* ---------- 起動 ---------- */
@@ -710,8 +762,11 @@ $('b-avatar').onclick=()=>go('p-set');
 document.querySelectorAll('#p-input input,#p-input select').forEach(el=>{ el.addEventListener('input',refresh); el.addEventListener('change',refresh) });
 fillSettings(); buildSites(); buildPeriods(); buildTraining();
 const dr=load(K.draft,null);
-if(dr && dr.date===today() && 'c1p' in dr) setRec(dr);
-else setRec({date:today(), period:PERIODS.includes(dr?.period)?dr.period:'1日', site:dr?.site, siteIsOther:dr?.siteIsOther, start:'10:00', end:'17:00'});
+if(dr && 'c1p' in dr){
+  setEditing(dr.editing||null); setRec(dr);
+  $('v-draft').textContent=`${dr.date}の下書きを復元しました（この端末）`;
+}else setRec({date:today(),period:'1日',site:'',start:'10:00',end:'17:00'});
+draftReady=true;
 renderHist(); syncHist();
 function setupFrom(t){
   try{ if(!applyCfg(parseCfg(String(t).trim()), true)) throw 0;
@@ -727,3 +782,4 @@ if(!S.name) $('setup-card').classList.remove('hide');
 </script>
 </body>
 </html>
+
