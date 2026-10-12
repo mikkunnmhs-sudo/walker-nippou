@@ -763,8 +763,10 @@ document.querySelectorAll('#p-input input,#p-input select').forEach(el=>{ el.add
 fillSettings(); buildSites(); buildPeriods(); buildTraining();
 const dr=load(K.draft,null);
 if(dr && 'c1p' in dr){
-  setEditing(dr.editing||null); setRec(dr);
-  $('v-draft').textContent=`${dr.date}の下書きを復元しました（この端末）`;
+  setEditing(dr.editing||null);
+  // 通常の起動では今日の日付にし、地域は毎回選ぶ。履歴編集中は元の記録を維持する。
+  setRec(dr.editing ? dr : {...dr,date:today(),site:'',siteIsOther:false});
+  $('v-draft').textContent=dr.editing ? '編集中の下書きを復元しました（この端末）' : '下書きを復元しました。今日の配達地域を選択してください';
 }else setRec({date:today(),period:'1日',site:'',start:'10:00',end:'17:00'});
 draftReady=true;
 renderHist(); syncHist();
