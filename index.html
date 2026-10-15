@@ -156,6 +156,16 @@ nav button.on{color:var(--pink)}
 .timer-status{font-size:14px;color:var(--sub);margin:8px 0 0;font-variant-numeric:tabular-nums}
 .timer-actions .btn{margin:0;background:var(--tile);color:var(--blue)}
 .timer-actions .btn:disabled{opacity:.4}
+.eff-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.eff-grid .big{font-size:30px;overflow-wrap:anywhere}
+.eff-label{font-size:13px;color:var(--sub);margin:0 0 5px}
+.eff-note{font-size:13px;color:var(--sub);line-height:1.6;margin:10px 0 0}
+.eff-change{font-size:14px;line-height:1.65;margin:8px 0 0;overflow-wrap:anywhere}
+.eff-better{color:var(--green)} .eff-worse{color:var(--orange)}
+.eff-region{padding:14px 16px;background:var(--card);border-radius:12px;margin-top:10px}
+.eff-region h3{font-size:17px;margin:0 0 10px;overflow-wrap:anywhere}
+.eff-region .big{font-size:25px}
+.hist .t small.record-efficiency{white-space:normal;font-size:13px;margin-top:4px}
 </style>
 </head>
 <body>
@@ -278,6 +288,24 @@ nav button.on{color:var(--pink)}
     <div class="stat c-orange"><div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2s6 5 6 11a6 6 0 0 1-12 0c0-2.5 1.2-4.4 2.5-5.6 0 2 1 3.6 2.5 3.6C11 7 12 2 12 2z"/></svg>時間</div><b id="v-sHours">0</b><u>時間</u></div>
     <div class="stat c-green"><div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3 6.5v11L12 22l9-4.5v-11zm0 2.2 6.4 3.2L12 10.6 5.6 7.4zM5 9.1l6 3v7.6l-6-3zm8 10.6v-7.6l6-3v7.6z"/></svg>配完</div><b id="v-sCount">0</b><u>個</u></div>
   </div>
+  <h2>配達ペース</h2>
+  <div class="card c-blue">
+    <div class="ch">全体の平均 <span class="cr">全期間</span></div>
+    <div class="eff-grid">
+      <div><p class="eff-label">1時間の配完個数</p><div class="big" id="v-eff-rate">—</div></div>
+      <div><p class="eff-label">1個あたり</p><div class="big" id="v-eff-time">—</div></div>
+    </div>
+    <p class="eff-note" id="v-eff-sample"></p>
+  </div>
+  <div class="card c-purple">
+    <div class="ch">今週と先週の比較</div>
+    <p class="eff-note" id="v-eff-dates"></p>
+    <div id="v-eff-week"></div>
+    <p class="eff-note">月曜始まり。先週も今週と同じ曜日までで比較します。今日の途中の実績も含みます。</p>
+  </div>
+  <h2>地域別の配達ペース <span style="font-size:13px;color:var(--sub);font-weight:400">全期間</span></h2>
+  <div id="v-eff-regions"></div>
+  <p class="foot">1便・2便の稼働時間で計算します。時間未入力・0分・不正な個数の便は除外。平均は合計個数÷合計時間で計算します。出退勤の時間は使いません。</p>
   <div class="card c-orange">
     <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>直近7日の配完個数<span class="cr" id="v-wkAvg"></span></div>
     <div class="chart" id="v-chart"></div>
@@ -736,6 +764,83 @@ function renderSummary(A){
     box.appendChild(c) });
   const wk=days.filter(d=>d.v); $('v-wkAvg').textContent = wk.length ? `平均 ${Math.round(wk.reduce((s,d)=>s+d.v,0)/wk.length)}個/日` : '';
 }
+/* ---------- 配達効率：有効な便の合計から加重平均を計算 ---------- */
+function deliveryPace(records){
+  let count=0, min=0, legs=0, excluded=0;
+  records.forEach(r=>{
+    const active=shows(r.period);
+    [1,2].forEach(n=>{
+      if(!active['b'+n]) return;
+      const rawCount=r[`c${n}c`], rawMin=r[`b${n}min`];
+      const c=Number(rawCount), m=Number(rawMin);
+      if(rawCount==null||String(rawCount).trim()===''||rawMin==null||String(rawMin).trim()===''||
+        !Number.isInteger(c)||c<0||!Number.isFinite(m)||m<=0){ excluded++; return }
+      count+=c; min+=m; legs++;
+    });
+  });
+  return {count,min,legs,excluded,rate:min>0?count*60/min:null,perItem:count>0?min/count:null};
+}
+const paceNum=n=>n==null?'—':n.toLocaleString('ja-JP',{minimumFractionDigits:1,maximumFractionDigits:1});
+function paceUnit(value,unit){ return value==null?'—':`${paceNum(value)} ${unit}` }
+function weekDates(){
+  const date=today(), [y,m,d]=date.split('-').map(Number), now=new Date(y,m-1,d,12);
+  const weekday=(now.getDay()+6)%7;
+  function day(offset){ const t=new Date(y,m-1,d+offset,12); return `${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())}` }
+  return {start:day(-weekday),end:date,previousStart:day(-weekday-7),previousEnd:day(-7)};
+}
+function paceWeeks(A,dates){
+  return {current:deliveryPace(A.filter(r=>r.date>=dates.start&&r.date<=dates.end)),
+    previous:deliveryPace(A.filter(r=>r.date>=dates.previousStart&&r.date<=dates.previousEnd))};
+}
+function paceDelta(cur,prev,kind){
+  if(cur==null||prev==null) return '比較できる記録が足りません';
+  const diff=cur-prev;
+  if(Math.abs(diff)<0.00000001) return '先週と同じ';
+  const unit=kind==='rate'?'個/時間':'分/個';
+  const word=kind==='rate'?(diff>0?'増加':'減少'):(diff<0?'短縮':'増加');
+  const percent=prev>0?`（${paceNum(Math.abs(diff)/prev*100)}%）`:'';
+  const amount=Math.abs(diff)<0.1?'0.1未満':paceNum(Math.abs(diff));
+  return `${amount} ${unit}${word}${percent}`;
+}
+function appendWeekPace(box,cur,prev){
+  [['rate','1時間あたり','個/時間'],['perItem','1個あたり','分/個']].forEach(([key,label,unit])=>{
+    const p=document.createElement('p'); p.className='eff-change';
+    const values=document.createElement('span'); values.textContent=`${label}：${paceUnit(prev[key],unit)} → ${paceUnit(cur[key],unit)}`;
+    const change=document.createElement('span');
+    if(cur[key]!=null&&prev[key]!=null&&cur[key]!==prev[key]) change.className=(key==='rate'?cur[key]>prev[key]:cur[key]<prev[key])?'eff-better':'eff-worse';
+    change.textContent=paceDelta(cur[key],prev[key],key); p.append(values,document.createElement('br'),change); box.appendChild(p);
+  });
+  const sample=document.createElement('p'); sample.className='eff-note';
+  sample.textContent=`対象：先週 ${prev.count.toLocaleString()}個・${paceNum(prev.min/60)}時間 ／ 今週 ${cur.count.toLocaleString()}個・${paceNum(cur.min/60)}時間`;
+  box.appendChild(sample);
+}
+function renderPace(A){
+  // 未来の勤務記録は実績として集計しない。
+  const records=A.filter(r=>/^\d{4}-\d{2}-\d{2}$/.test(r.date||'')&&r.date<=today());
+  const total=deliveryPace(records), dates=weekDates(), weeks=paceWeeks(records,dates);
+  $('v-eff-rate').textContent=paceUnit(total.rate,'個/時間');
+  $('v-eff-time').textContent=paceUnit(total.perItem,'分/個');
+  $('v-eff-sample').textContent=`対象：${total.count.toLocaleString()}個・${paceNum(total.min/60)}時間・${total.legs}便（除外 ${total.excluded}便）`;
+  $('v-eff-dates').textContent=`先週 ${dates.previousStart}〜${dates.previousEnd} → 今週 ${dates.start}〜${dates.end}`;
+  const week=$('v-eff-week'); week.innerHTML=''; appendWeekPace(week,weeks.current,weeks.previous);
+  const box=$('v-eff-regions'); box.innerHTML='';
+  const sites=new Map(); records.forEach(r=>{ const key=String(r.site||'地域未設定').trim()||'地域未設定'; if(!sites.has(key)) sites.set(key,[]); sites.get(key).push(r) });
+  const groups=[...sites].map(([site,rows])=>({site,rows,pace:deliveryPace(rows)})).sort((a,b)=>b.pace.count-a.pace.count||a.site.localeCompare(b.site,'ja'));
+  if(!groups.length){ const p=document.createElement('p'); p.className='foot'; p.textContent='履歴が増えると地域別の配達ペースが表示されます'; box.appendChild(p) }
+  groups.forEach(({site,rows,pace})=>{
+    const card=document.createElement('div'); card.className='eff-region';
+    const title=document.createElement('h3'); title.textContent=site; card.appendChild(title);
+    const grid=document.createElement('div'); grid.className='eff-grid';
+    [['1時間の配完個数',pace.rate,'個/時間'],['1個あたり',pace.perItem,'分/個']].forEach(([label,value,unit])=>{
+      const cell=document.createElement('div'),small=document.createElement('p'),number=document.createElement('div');
+      small.className='eff-label'; small.textContent=label; number.className='big'; number.textContent=paceUnit(value,unit); cell.append(small,number); grid.appendChild(cell);
+    });
+    card.appendChild(grid);
+    const note=document.createElement('p'); note.className='eff-note'; note.textContent=`全期間：${pace.count.toLocaleString()}個・${paceNum(pace.min/60)}時間・${pace.legs}便（除外 ${pace.excluded}便）`; card.appendChild(note);
+    const w=paceWeeks(rows,dates); appendWeekPace(card,w.current,w.previous); box.appendChild(card);
+  });
+}
+
 function legHtml(cls, label, min, cnt){
   const l=document.createElement('span'); l.className='leg '+cls;
   l.innerHTML=`<i>${label}</i>`; l.append(`${min==null?'--:--':hm(min)}・${cnt===''||cnt==null?'--':cnt}個`);
@@ -753,9 +858,12 @@ function renderHist(){
     if(sh.b1) legs.append(legHtml('am','午前', r.b1min, r.c1c));
     if(sh.b2) legs.append(legHtml('pm','午後', r.b2min, r.c2c));
     d.querySelector('small').textContent=`${r.period}・${r.start}〜${r.end}`+(Number(r.leftover)?`・持戻${r.leftover}`:'')+(Number(r.undelivered)?`・未配${r.undelivered}`:'');
+    const pace=deliveryPace([r]), detail=document.createElement('small'); detail.className='record-efficiency';
+    detail.textContent=pace.legs?`${paceUnit(pace.rate,'個/時間')}・${paceUnit(pace.perItem,'分/個')}${pace.excluded?'（時間等が未入力の便を除く）':''}`:'配達ペース：稼働時間・配完個数を入力すると表示';
+    d.querySelector('.t').appendChild(detail);
     d.onclick=()=>openSheet(r); box.appendChild(d);
   });
-  renderSummary(A);
+  renderSummary(A); renderPace(A);
   const un=H.filter(r=>S.sheetUrl&&!r.sheetSent);
   $('v-unsent').classList.toggle('hide',!un.length); $('v-unsentN').textContent=un.length;
   const sy=$('v-sync');
