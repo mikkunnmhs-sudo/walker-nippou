@@ -167,6 +167,11 @@ nav button.on{color:var(--pink)}
     <button class="avatar" id="b-avatar" aria-label="設定">?</button>
   </div>
 
+  <div class="card c-blue">
+    <div class="ch">別端末へ引き継ぎ</div>
+    <button class="btn plain" id="b-loadShared">共有下書きを読み込む</button>
+    <p class="foot" id="v-shared" aria-live="polite">切り替え前に「下書きを共有保存」、別端末で「共有下書きを読み込む」。計測中の時間も引き継げます。</p>
+  </div>
   <div class="card c-orange hide" id="edit-card">
     <div class="ch">記録を編集中</div>
     <p style="margin:4px 0 10px;font-size:15px;line-height:1.5"><b id="v-editing"></b> の記録を直しています。直したら下の「変更を保存」を押してください。</p>
@@ -258,9 +263,9 @@ nav button.on{color:var(--pink)}
   <p class="warn hide" id="v-warn"></p>
   <p class="foot" id="v-sendinfo"></p>
   <button class="btn plain" id="b-copy">LINE報告文をコピー</button>
-  <button class="btn plain" id="b-draft">下書き保存</button>
+  <button class="btn plain" id="b-draft">下書きを共有保存</button>
   <p class="foot" id="v-draft" aria-live="polite"></p>
-  <p class="foot">入力中は自動で下書き保存されます。午前だけ終わった時などは「下書き保存」を押しておくと確実です。</p>
+  <p class="foot">入力中は自動で下書き保存されます。別端末へ切り替える前に「下書きを共有保存」を押し、共有保存完了の表示を確認してください。</p>
   <button class="btn plain" id="b-clear" style="color:var(--red)">入力をリセット</button>
 </section>
 
@@ -397,9 +402,12 @@ const cntOf = r => (Number(r.c1c)||0)+(Number(r.c2c)||0);
 let period = '1日', training = [], editing = null;
 let timers = {}, draftReady = false, sending = false;
 const nowTime = () => { const d=new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}` };
+function draftSnapshot(){
+  return {...getRec(),editing:editing ? {...editing} : null,timers:{...timers},savedAt:Date.now()};
+}
 function saveDraft(){
   if(!draftReady) return true;
-  const ok=save(K.draft,{...getRec(), editing:editing ? {...editing} : null, timers:{...timers}, savedAt:Date.now()});
+  const ok=save(K.draft,draftSnapshot());
   $('v-draft').textContent=ok ? 'この端末に下書き保存済み' : '下書きを保存できません。端末の空き容量・ブラウザ設定を確認してください';
   return ok;
 }
@@ -559,15 +567,16 @@ async function saveEdit(r){ // 編集：同じ記録IDでシートの行を上�
   if(S.sheetUrl){ try{ await sendSheet(r); r.sheetSent=true }catch(e){} }
   const i = H.findIndex(x=>String(x.id)===String(r.id));
   if(i>=0) H[i]=r; else H.unshift(r);
-  save(K.hist,H);
+  const stored=save(K.hist,H);
   await copied;
-  resetInput();
+  if(!stored) return toast('履歴を保存できません。入力を残しています');
+  clearSubmittedShared(); resetInput();
   go('p-hist'); renderHist(); if(r.sheetSent) syncHist();
   toast(S.sheetUrl && !r.sheetSent ? '保存しました（シートは未送信：電波？）' : '記録を更新しました（LINE文もコピー済み）');
 }
 $('b-editCancel').onclick=()=>{ resetInput(); go('p-hist') };
 $('b-send').onclick = async ()=>{
-  if(sending) return;
+  if(sending||sharedBusy) return toast('保存処理が終わるまでお待ちください');
   const r=getRec(), err=missing(r);
   if(err){ $('v-warn').textContent=err; $('v-warn').classList.remove('hide'); return toast(err) }
   sending=true; $('b-send').disabled=true;
@@ -582,7 +591,7 @@ $('b-send').onclick = async ()=>{
   }
   if(S.sheetUrl){ try{ await sendSheet(r); r.sheetSent=true }catch(e){} }
   H.unshift(r); const stored=save(K.hist,H); renderHist(); if(r.sheetSent) syncHist();
-  if(stored) resetInput(); else toast('履歴を端末に保存できません。入力を残しています');
+  if(stored){ clearSubmittedShared(); resetInput() } else toast('履歴を端末に保存できません。入力を残しています');
   await copied;
   const msg=[]; if(S.autoForm&&formBase()) msg.push(r.formSent?'フォーム送信':'フォーム未送信');
   if(S.sheetUrl) msg.push(r.sheetSent?'シート追加':'シート未送信（電波？）');
@@ -590,8 +599,85 @@ $('b-send').onclick = async ()=>{
   }finally{ sending=false; $('b-send').disabled=false }
 };
 $('b-copy').onclick=()=>copy(lineText(getRec()));
-$('b-draft').onclick=()=>toast(saveDraft()?'下書きを保存しました':'保存に失敗しました');
+$('b-draft').onclick=()=>shareDraft();
 $('b-clear').onclick=()=>{ if(confirm('入力をリセットしますか？')) resetInput() };
+
+/* ---------- 下書きの端末間引き継ぎ ---------- */
+let sharedBusy=false;
+const sharedIdentity=()=>JSON.stringify([S.sheetUrl,S.name.trim()]);
+function sharedMeta(){ const m=load('wn_shared_draft_meta',{}); return m[sharedIdentity()]||null }
+function rememberShared(remote){
+  const m=load('wn_shared_draft_meta',{}); m[sharedIdentity()]={revision:remote.revision}; save('wn_shared_draft_meta',m);
+}
+function sharedStatus(text){ $('v-shared').textContent=text }
+function sharedContext(){
+  if(!S.sheetUrl) throw new Error('設定でスプレッドシートのURLを入れてください。端末内の下書きは保存済みです');
+  if(!S.name.trim()) throw new Error('設定で氏名を入れてください');
+  return {identity:sharedIdentity(),url:S.sheetUrl,key:S.name.trim()};
+}
+function assertSharedContext(ctx){ if(ctx.identity!==sharedIdentity()) throw new Error('設定が変更されました。もう一度操作してください') }
+async function readShared(ctx){
+  const u=new URL(ctx.url); u.searchParams.set('action','draft'); u.searchParams.set('draftKey',ctx.key); u.searchParams.set('t',String(Date.now()));
+  let j=null;
+  try{ const res=await fetch(u.href,{cache:'no-store',signal:AbortSignal.timeout(12000)}); j=await res.json() }catch(e){}
+  if(!j||j.draftVersion!==1) { try{ j=await jsonp(u.href) }catch(e){ throw new Error('共有下書きを読めませんでした。通信状態とApps Scriptの更新を確認してください') } }
+  assertSharedContext(ctx);
+  if(j?.draftVersion!==1) throw new Error('共有にはApps Scriptの更新が必要です。端末内の下書きは保存されています');
+  if(!j.ok||!Number.isSafeInteger(j.revision)||j.revision<0) throw new Error('共有下書きの応答を確認できませんでした');
+  return j;
+}
+function setSharedBusy(on){ sharedBusy=on; $('b-draft').disabled=on; $('b-loadShared').disabled=on }
+async function shareDraft(){
+  if(sharedBusy) return;
+  if(!saveDraft()) return toast('端末への保存に失敗しました');
+  setSharedBusy(true);
+  try{
+    const ctx=sharedContext(), snapshot=draftSnapshot();
+    sharedStatus('共有下書きを確認中…');
+    const remote=await readShared(ctx), meta=sharedMeta();
+    if(remote.revision!==(meta?.revision??0)&&!confirm('別端末で更新された共有下書きがあります。今の端末の内容で上書きしますか？（読み込む場合はキャンセル）')) {
+      sharedStatus('共有保存は中止しました。今の入力は端末内に残っています'); return;
+    }
+    assertSharedContext(ctx);
+    const operationId=crypto.randomUUID();
+    await fetch(ctx.url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({action:'draftSave',draftKey:ctx.key,baseRevision:remote.revision,operationId,draft:snapshot})});
+    const result=await readShared(ctx);
+    if(result.operationId!==operationId) throw new Error('共有保存を確認できませんでした。別端末の更新と重なった可能性があります。入力は端末内に残っています');
+    rememberShared(result);
+    sharedStatus('共有保存完了。別端末で「共有下書きを読み込む」を押してください'); toast('下書きと計測状態を共有保存しました');
+  }catch(e){ sharedStatus(e.message); toast('共有保存できませんでした（端末内には保存済み）') }
+  finally{ setSharedBusy(false) }
+}
+$('b-loadShared').onclick=async()=>{
+  if(sharedBusy) return;
+  setSharedBusy(true);
+  try{
+    const ctx=sharedContext(); sharedStatus('共有下書きを読み込み中…'); const remote=await readShared(ctx);
+    if(!remote.draft){ sharedStatus('共有下書きはありません。元の端末で「下書きを共有保存」を押してください'); return }
+    const d=remote.draft;
+    if(typeof d!=='object'||!('c1p' in d)||!d.date) throw new Error('共有下書きの形式が違います');
+    if(!confirm(`${d.date}の共有下書きを読み込みますか？今の入力を置き換えます。`)){ sharedStatus('読み込みを中止しました'); return }
+    // 読み込む前の端末内下書きを残す（通信が切れても保存される）。
+    if(!save('wn_draft_before_shared',draftSnapshot())) throw new Error('現在の入力を退避できないため読み込みを中止しました');
+    assertSharedContext(ctx); setEditing(d.editing||null); setRec(d); rememberShared(remote); go('p-input');
+    sharedStatus('共有下書きを読み込みました。計測中の便はそのまま継続します'); toast('共有下書きを読み込みました');
+  }catch(e){ sharedStatus(e.message); toast('共有下書きを読み込めませんでした') }
+  finally{ setSharedBusy(false) }
+};
+// 日報を保存できた後だけ、読み込み／保存済みの共有下書きを消す。
+// 他端末が更新していた場合はbaseRevisionが一致せず、サーバーで保護される。
+async function clearSubmittedShared(){
+  const meta=sharedMeta(); if(!meta||!S.sheetUrl) return;
+  try{
+    const ctx=sharedContext(), operationId=crypto.randomUUID();
+    await fetch(ctx.url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({action:'draftSave',draftKey:ctx.key,baseRevision:meta.revision,operationId,draft:null})});
+    const result=await readShared(ctx);
+    if(result.operationId===operationId){ rememberShared(result); sharedStatus('送信済みの共有下書きをクリアしました') }
+    else sharedStatus('共有下書きは更新されているため残しました');
+  }catch(e){ sharedStatus('共有下書きのクリアを確認できませんでした。古い下書きを再送信しないようご確認ください') }
+}
 
 /* ---------- 履歴 ---------- */
 const ICON_BOX='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3 6.5v11L12 22l9-4.5v-11zm0 2.2 6.4 3.2L12 10.6 5.6 7.4zM5 9.1l6 3v7.6l-6-3zm8 10.6v-7.6l6-3v7.6z"/></svg>';
@@ -784,4 +870,5 @@ if(!S.name) $('setup-card').classList.remove('hide');
 </script>
 </body>
 </html>
+
 
