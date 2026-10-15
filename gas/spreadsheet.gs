@@ -18,6 +18,7 @@ function doPost(e) {
   lock.waitLock(10000);
   try {
     const d = JSON.parse(e.postData.contents);
+    if (d.action === 'draftSave') return writeDraft_(d);
     const sh = getSheet_();
     if (d.test) {
       sh.appendRow([new Date(), 'テスト']);
@@ -43,6 +44,9 @@ function doPost(e) {
 
 // アプリの履歴タブが、どの端末からでもシートの記録を読めるようにする
 function doGet(e) {
+  if (e && e.parameter && e.parameter.action === 'draft') {
+    return jsonOut_(readDraft_(e.parameter.draftKey), e.parameter.callback);
+  }
   const sh = getSheet_();
   const last = sh.getLastRow();
   const rows = last > 1 ? sh.getRange(2, 1, last - 1, HEADERS.length).getDisplayValues() : [];
@@ -84,4 +88,54 @@ function getSheet_() {
 
 function out_(s) {
   return ContentService.createTextOutput(s);
+}
+
+
+// 日報とは別シートに1人につき1つの下書きを保存する。
+// doPostのロック下でrevisionを比較し、同時更新による上書きを防ぐ。
+function draftSheet_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName('共有下書き');
+  if (!sh) sh = ss.insertSheet('共有下書き');
+  if (!sh.getLastRow()) {
+    sh.appendRow(['共有キー', '更新番号', '操作ID', '更新日時', '下書きJSON']);
+    sh.getRange(1, 1, sh.getMaxRows(), 5).setNumberFormat('@');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+function draftRow_(sh, key) {
+  if (sh.getLastRow() < 2) return 0;
+  const i = sh.getRange(2, 1, sh.getLastRow()-1, 1).getDisplayValues().map(r=>r[0]).indexOf(key);
+  return i < 0 ? 0 : i+2;
+}
+function readDraft_(rawKey) {
+  const key = String(rawKey || '').trim();
+  if (!key || key.length > 200) return {ok:false,draftVersion:1};
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('共有下書き');
+  const row = sh ? draftRow_(sh,key) : 0;
+  if (!row) return {ok:true,draftVersion:1,revision:0,draft:null,operationId:''};
+  const r = sh.getRange(row,1,1,5).getDisplayValues()[0];
+  return {ok:true,draftVersion:1,revision:Number(r[1]),operationId:r[2],updatedAt:r[3],draft:JSON.parse(r[4]||'null')};
+}
+function writeDraft_(d) {
+  const key = String(d.draftKey || '').trim();
+  if (!key || key.length>200 || !Number.isSafeInteger(d.baseRevision) || d.baseRevision<0 ||
+      typeof d.operationId!=='string' || !/^[A-Za-z0-9-]{1,100}$/.test(d.operationId)) return jsonOut_({ok:false,error:'invalid'},null);
+  if (d.draft!==null && (typeof d.draft!=='object' || Array.isArray(d.draft) || !d.draft || !d.draft.date || !('c1p' in d.draft))) return jsonOut_({ok:false,error:'invalidDraft'},null);
+  const json = JSON.stringify(d.draft);
+  if (json.length>40000) return jsonOut_({ok:false,error:'tooLarge'},null);
+  const sh = draftSheet_(), row = draftRow_(sh,key);
+  const r = row ? sh.getRange(row,1,1,5).getDisplayValues()[0] : null;
+  if (r && r[2]===d.operationId) return jsonOut_({ok:true},null); // 同じ操作の再送は一度だけ
+  if ((r ? Number(r[1]) : 0)!==d.baseRevision) return jsonOut_({ok:false,error:'conflict'},null);
+  const values = [key,String(d.baseRevision+1),d.operationId,new Date().toISOString(),json];
+  if (row) sh.getRange(row,1,1,5).setValues([values]); else sh.appendRow(values);
+  SpreadsheetApp.flush();
+  return jsonOut_({ok:true},null);
+}
+function jsonOut_(data, callback) {
+  const json = JSON.stringify(data);
+  if (callback && /^[A-Za-z_$][\w$]*$/.test(callback)) return ContentService.createTextOutput(callback+'('+json+')').setMimeType(ContentService.MimeType.JAVASCRIPT);
+  return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
 }
