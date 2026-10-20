@@ -27,14 +27,11 @@
   }
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:var(--bg);color:var(--text);height:100%;overflow:hidden}
+html,body{margin:0;background:var(--bg);color:var(--text)}
 body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Hiragino Sans",sans-serif;font-size:17px;
-  height:100vh;height:100dvh;display:flex;flex-direction:column;min-height:0;
-  padding:calc(env(safe-area-inset-top, 0px) + 12px) 0 0;-webkit-text-size-adjust:100%}
+  padding:calc(env(safe-area-inset-top, 0px) + 20px) 0 calc(84px + env(safe-area-inset-bottom));-webkit-text-size-adjust:100%}
 .num,.big,.card input.n,.tile input,.stat b{font-family:ui-rounded,"SF Pro Rounded",-apple-system,sans-serif;font-variant-numeric:tabular-nums}
-.page{display:none;flex:1 1 0;min-height:0;width:100%;max-width:640px;margin:0 auto;
-  padding:0 max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px));
-  overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
+.page{display:none;max-width:640px;margin:0 auto;padding:0 16px}
 .page.on{display:block}
 .top{display:flex;align-items:flex-end;justify-content:space-between;margin:14px 4px 6px}
 .eyebrow{margin:0 0 2px;font-size:13px;font-weight:600;color:var(--sub)}
@@ -126,7 +123,7 @@ h2{font-size:22px;font-weight:700;margin:26px 4px 10px}
 .badge.ng{background:rgba(255,149,0,.15);color:var(--orange)}
 .chev{color:#c4c4c7;font-size:20px}
 .empty{text-align:center;color:var(--sub);padding:40px 0}
-nav{position:relative;flex:0 0 auto;display:flex;background:var(--bar);
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--bar);
   -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
   border-top:.5px solid var(--sep);padding-bottom:env(safe-area-inset-bottom);z-index:5}
 nav button{flex:1;border:0;background:none;color:var(--sub);font:500 10px inherit;font-family:inherit;padding:7px 0 4px;
@@ -1025,10 +1022,7 @@ $('b-import').onclick=()=>{ const t=prompt('コピーした設定、または設
 
 /* ---------- タブ ---------- */
 function go(id){ document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.id===id));
-  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.p===id));
-  // ページごとにスクロールする。Safariの外側のスクロール位置に影響されない。
-  const page=$(id); page.scrollTop=0;
-}
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.p===id)); scrollTo(0,0) }
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{ go(b.dataset.p); if(b.dataset.p==='p-hist'||b.dataset.p==='p-region') syncHist() });
 $('b-regionSync').onclick=()=>{ $('v-region-sync').textContent='読み込み中…'; syncHist() };
 $('b-sync').onclick=()=>{ $('v-sync').textContent='読み込み中…'; syncHist() };
