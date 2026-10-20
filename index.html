@@ -293,19 +293,25 @@ nav button.on{color:var(--pink)}
     <div class="ch">全体の平均 <span class="cr">全期間</span></div>
     <div class="eff-grid">
       <div><p class="eff-label">1時間の配完個数</p><div class="big" id="v-eff-rate">—</div></div>
-      <div><p class="eff-label">1個あたり</p><div class="big" id="v-eff-time">—</div></div>
+      <div><p class="eff-label">配完1個あたり</p><div class="big" id="v-eff-time">—</div></div>
     </div>
     <p class="eff-note" id="v-eff-sample"></p>
+    <p class="eff-label" style="margin-top:16px">配達ペース（配完＋不在）</p>
+    <div class="eff-grid">
+      <div><p class="eff-label">1時間の配達個数</p><div class="big" id="v-attempt-rate">—</div></div>
+      <div><p class="eff-label">配達1個あたり</p><div class="big" id="v-attempt-time">—</div></div>
+    </div>
+    <p class="eff-note" id="v-attempt-sample"></p>
   </div>
   <div class="card c-purple">
-    <div class="ch">今週と先週の比較</div>
+    <div class="ch">今週と先週の比較（配完）</div>
     <p class="eff-note" id="v-eff-dates"></p>
     <div id="v-eff-week"></div>
     <p class="eff-note">月曜始まり。先週も今週と同じ曜日までで比較します。今日の途中の実績も含みます。</p>
   </div>
   <h2>地域別の配達ペース <span style="font-size:13px;color:var(--sub);font-weight:400">全期間</span></h2>
   <div id="v-eff-regions"></div>
-  <p class="foot">1便・2便の稼働時間で計算します。時間未入力・0分・不正な個数の便は除外。平均は合計個数÷合計時間で計算します。出退勤の時間は使いません。</p>
+  <p class="foot">1便・2便の稼働時間で計算します。時間未入力・0分・不正な個数の便は除外。平均は合計個数÷合計時間で計算します。出退勤の時間は使いません。不在＝持ち戻り個数として、配完＋不在のペースも計算します。不在数が未記録の便は配達ペースの集計から除きます。</p>
   <div class="card c-orange">
     <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>直近7日の配完個数<span class="cr" id="v-wkAvg"></span></div>
     <div class="chart" id="v-chart"></div>
@@ -765,7 +771,7 @@ function renderSummary(A){
   const wk=days.filter(d=>d.v); $('v-wkAvg').textContent = wk.length ? `平均 ${Math.round(wk.reduce((s,d)=>s+d.v,0)/wk.length)}個/日` : '';
 }
 /* ---------- 配達効率：有効な便の合計から加重平均を計算 ---------- */
-function deliveryPace(records){
+function deliveryPace(records, includeAbsent=false){
   let count=0, min=0, legs=0, excluded=0;
   records.forEach(r=>{
     const active=shows(r.period);
@@ -775,7 +781,12 @@ function deliveryPace(records){
       const c=Number(rawCount), m=Number(rawMin);
       if(rawCount==null||String(rawCount).trim()===''||rawMin==null||String(rawMin).trim()===''||
         !Number.isInteger(c)||c<0||!Number.isFinite(m)||m<=0){ excluded++; return }
-      count+=c; min+=m; legs++;
+      let absent=0;
+      if(includeAbsent){
+        const rawAbsent=r[`c${n}r`]; absent=Number(rawAbsent);
+        if(rawAbsent==null||String(rawAbsent).trim()===''||!Number.isInteger(absent)||absent<0){ excluded++; return }
+      }
+      count+=c+absent; min+=m; legs++;
     });
   });
   return {count,min,legs,excluded,rate:min>0?count*60/min:null,perItem:count>0?min/count:null};
@@ -821,6 +832,10 @@ function renderPace(A){
   $('v-eff-rate').textContent=paceUnit(total.rate,'個/時間');
   $('v-eff-time').textContent=paceUnit(total.perItem,'分/個');
   $('v-eff-sample').textContent=`対象：${total.count.toLocaleString()}個・${paceNum(total.min/60)}時間・${total.legs}便（除外 ${total.excluded}便）`;
+  const attempts=deliveryPace(records,true);
+  $('v-attempt-rate').textContent=paceUnit(attempts.rate,'個/時間');
+  $('v-attempt-time').textContent=paceUnit(attempts.perItem,'分/個');
+  $('v-attempt-sample').textContent=`配完＋不在：${attempts.count.toLocaleString()}個・${paceNum(attempts.min/60)}時間・${attempts.legs}便（除外 ${attempts.excluded}便）`;
   $('v-eff-dates').textContent=`先週 ${dates.previousStart}〜${dates.previousEnd} → 今週 ${dates.start}〜${dates.end}`;
   const week=$('v-eff-week'); week.innerHTML=''; appendWeekPace(week,weeks.current,weeks.previous);
   const box=$('v-eff-regions'); box.innerHTML='';
@@ -831,12 +846,17 @@ function renderPace(A){
     const card=document.createElement('div'); card.className='eff-region';
     const title=document.createElement('h3'); title.textContent=site; card.appendChild(title);
     const grid=document.createElement('div'); grid.className='eff-grid';
-    [['1時間の配完個数',pace.rate,'個/時間'],['1個あたり',pace.perItem,'分/個']].forEach(([label,value,unit])=>{
+    const attempts=deliveryPace(rows,true);
+    [['1時間の配完個数',pace.rate,'個/時間'],['配完1個あたり',pace.perItem,'分/個'],
+      ['1時間の配達個数（配完＋不在）',attempts.rate,'個/時間'],['配達1個あたり（配完＋不在）',attempts.perItem,'分/個']].forEach(([label,value,unit])=>{
       const cell=document.createElement('div'),small=document.createElement('p'),number=document.createElement('div');
       small.className='eff-label'; small.textContent=label; number.className='big'; number.textContent=paceUnit(value,unit); cell.append(small,number); grid.appendChild(cell);
     });
     card.appendChild(grid);
     const note=document.createElement('p'); note.className='eff-note'; note.textContent=`全期間：${pace.count.toLocaleString()}個・${paceNum(pace.min/60)}時間・${pace.legs}便（除外 ${pace.excluded}便）`; card.appendChild(note);
+    const attemptNote=document.createElement('p'); attemptNote.className='eff-note';
+    attemptNote.textContent=`配完＋不在：${attempts.count.toLocaleString()}個・${paceNum(attempts.min/60)}時間・${attempts.legs}便（除外 ${attempts.excluded}便）`; card.appendChild(attemptNote);
+    const weekLabel=document.createElement('p'); weekLabel.className='eff-label'; weekLabel.style.marginTop='12px'; weekLabel.textContent='先週との比較（配完）'; card.appendChild(weekLabel);
     const w=paceWeeks(rows,dates); appendWeekPace(card,w.current,w.previous); box.appendChild(card);
   });
 }
@@ -978,5 +998,6 @@ if(!S.name) $('setup-card').classList.remove('hide');
 </script>
 </body>
 </html>
+
 
 
