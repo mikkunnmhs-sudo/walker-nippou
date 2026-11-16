@@ -66,7 +66,7 @@ h2{font-size:22px;font-weight:700;margin:26px 4px 10px}
 .tile input{width:100%;border:0;background:transparent;color:var(--text);font-size:26px;font-weight:700;padding:2px 0;
   outline:none;-webkit-appearance:none;appearance:none;min-height:36px;text-align:left}
 .tile input::-webkit-date-and-time-value{text-align:left}
-.tile input[type=time]{font-size:22px}
+.tile input.tm::placeholder{color:var(--sub);opacity:.55}
 .tile .unit{position:absolute;right:12px;bottom:12px;font-size:14px;font-weight:600;color:var(--sub)}
 .tile.has-unit input{padding-right:24px}
 .row{display:flex;align-items:center;min-height:44px;padding:0 16px;position:relative;gap:10px}
@@ -162,8 +162,49 @@ nav button.on{color:var(--pink)}
 .timer-status{font-size:14px;color:var(--sub);margin:8px 0 0;font-variant-numeric:tabular-nums}
 .timer-actions .btn{margin:0;background:var(--tile);color:var(--blue)}
 .timer-actions .btn:disabled{opacity:.4}
+/* ---- 送信バー（画面下に固定）・その他の操作・いつもの時間 ---- */
+.sendbar{position:sticky;bottom:calc(env(safe-area-inset-bottom, 0px) + 62px);z-index:3;margin-top:12px;padding:8px 10px 10px;
+  background:var(--card);border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.16),0 0 0 .5px var(--sep)}
+.sendbar .btn{margin-top:6px;padding:13px}
+.todo{display:block;width:100%;border:0;background:none;color:var(--orange);font:600 13px/1.4 inherit;font-family:inherit;
+  padding:2px 6px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.todo.ok{color:var(--green)}
+.flash{animation:flash 1.4s}
+@keyframes flash{0%,55%{box-shadow:0 0 0 2px var(--orange)}100%{box-shadow:0 0 0 2px transparent}}
+.more{background:var(--card);border-radius:12px;margin-top:16px}
+.more summary{display:flex;align-items:center;gap:8px;min-height:48px;padding:0 16px;font-weight:600;list-style:none;cursor:pointer}
+.more summary::-webkit-details-marker{display:none}
+.more summary span{color:var(--sub);font-size:13px;font-weight:400;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.more summary::after{content:"›";margin-left:auto;color:#c4c4c7;font-size:20px;transition:transform .2s}
+.more[open] summary::after{transform:rotate(90deg)}
+.more-body{padding:0 16px 16px}
+.more .btn{background:var(--tile);margin-top:8px}
+.more .foot{margin:8px 0 0}
+.ch button.cr{color:var(--blue);font-size:15px;padding:4px 0}
+.quicks{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.quick{border:0;border-radius:16px;background:var(--tile);color:var(--blue);font:600 15px/1.2 inherit;font-family:inherit;
+  padding:9px 14px;font-variant-numeric:tabular-nums}
+.quick.on{background:var(--orange);color:#fff}
+/* ---- 送信後の「今日のまとめ」 ---- */
+.done{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;
+  padding:20px 16px calc(20px + env(safe-area-inset-bottom))}
+.done.on{display:flex}
+.done-card{background:var(--bg);border-radius:20px;padding:20px 16px 16px;width:100%;max-width:420px;max-height:100%;overflow-y:auto}
+.done-card h2{margin:0 4px 14px}
+.done-card .eyebrow{margin:0 4px 2px}
+.done-card .stat{white-space:nowrap;overflow:hidden}
+.done-card .stat b{font-size:20px}
+.done-card .stat u{font-size:11px;margin:0 0 0 2px}
+.done-notes{background:var(--card);border-radius:12px;padding:4px 14px;margin-top:10px}
+.done-notes p{margin:0;padding:10px 0;font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+.done-notes p+p{border-top:.5px solid var(--sep)}
+/* ---- 履歴：月の切り替え ---- */
+.month-nav{display:flex;align-items:center;justify-content:space-between;background:var(--card);border-radius:12px;padding:2px 4px}
+.month-nav b{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.month-nav button{border:0;background:none;color:var(--blue);font:400 28px/1 inherit;font-family:inherit;width:52px;height:44px}
+.month-nav button:disabled{color:var(--sub);opacity:.35}
 .eff-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.eff-grid .big{font-size:30px;overflow-wrap:anywhere}
+.eff-grid .big{font-size:24px;overflow-wrap:anywhere}
 .eff-label{font-size:13px;color:var(--sub);margin:0 0 5px}
 .eff-note{font-size:13px;color:var(--sub);line-height:1.6;margin:10px 0 0}
 .eff-change{font-size:14px;line-height:1.65;margin:8px 0 0;overflow-wrap:anywhere}
@@ -193,11 +234,6 @@ nav button.on{color:var(--pink)}
     <button class="avatar" id="b-avatar" aria-label="設定">?</button>
   </div>
 
-  <div class="card c-blue">
-    <div class="ch">別端末へ引き継ぎ</div>
-    <button class="btn plain" id="b-loadShared">共有下書きを読み込む</button>
-    <p class="foot" id="v-shared" aria-live="polite">切り替え前に「下書きを共有保存」、別端末で「共有下書きを読み込む」。計測中の時間も引き継げます。</p>
-  </div>
   <div class="card c-orange hide" id="edit-card">
     <div class="ch">記録を編集中</div>
     <p style="margin:4px 0 10px;font-size:15px;line-height:1.5"><b id="v-editing"></b> の記録を直しています。直したら下の「変更を保存」を押してください。</p>
@@ -227,9 +263,11 @@ nav button.on{color:var(--pink)}
     <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 10.4 3.2 1.9-.9 1.5L11 13V7h2v5.4z"/></svg>出勤・退勤<span class="cr">10分単位</span></div>
     <div class="big num" id="v-hours">--</div>
     <div class="pair">
-      <label class="tile"><small>稼働開始（出勤）</small><input type="time" id="f-start"></label>
-      <label class="tile"><small>稼働終了（退勤）</small><input type="time" id="f-end"></label>
+      <label class="tile"><small>稼働開始（出勤）</small><input type="text" class="tm" inputmode="numeric" pattern="[0-9:]*" autocomplete="off" placeholder="--:--" id="f-start" data-next="f-end" aria-describedby="v-tmhint"></label>
+      <label class="tile"><small>稼働終了（退勤）</small><input type="text" class="tm" inputmode="numeric" pattern="[0-9:]*" autocomplete="off" placeholder="--:--" id="f-end" aria-describedby="v-tmhint"></label>
     </div>
+    <p class="foot" id="v-tmhint" style="margin:8px 0 0">時刻は数字だけで入力できます（例：930 → 09:30、1730 → 17:30）</p>
+    <div id="row-usual" class="hide"><p class="sub2">いつもの時間（タップで入力）</p><div class="quicks" id="v-usual"></div></div>
   </div>
 
   <div class="card c-green" id="sec-b1">
@@ -242,10 +280,10 @@ nav button.on{color:var(--pink)}
     <p class="sub2">1便 稼働時間</p>
     <div class="pair timer-actions"><button class="btn" id="b-timer1Start">▶ スタート</button><button class="btn" id="b-timer1Stop">■ ストップ</button></div>
     <p class="timer-status" id="v-timer1"></p>
-    <p class="foot">押した時刻を記録します。下の時刻は手入力でも直せます。</p>
+    <p class="foot">押した時刻を記録します。下の時刻は数字で直せます（例：930）。</p>
     <div class="pair" style="margin-top:6px">
-      <label class="tile"><small>開始</small><input type="time" id="f-b1s"></label>
-      <label class="tile"><small>終了</small><input type="time" id="f-b1e"></label>
+      <label class="tile"><small>開始</small><input type="text" class="tm" inputmode="numeric" pattern="[0-9:]*" autocomplete="off" placeholder="--:--" id="f-b1s" data-next="f-b1e"></label>
+      <label class="tile"><small>終了</small><input type="text" class="tm" inputmode="numeric" pattern="[0-9:]*" autocomplete="off" placeholder="--:--" id="f-b1e"></label>
     </div>
     <div class="row" style="margin-top:6px"><span>稼働時間</span><span class="autov num" id="v-b1min">--:--</span></div>
   </div>
@@ -259,10 +297,10 @@ nav button.on{color:var(--pink)}
     <p class="sub2">2便 稼働時間</p>
     <div class="pair timer-actions"><button class="btn" id="b-timer2Start">▶ スタート</button><button class="btn" id="b-timer2Stop">■ ストップ</button></div>
     <p class="timer-status" id="v-timer2"></p>
-    <p class="foot">押した時刻を記録します。下の時刻は手入力でも直せます。</p>
+    <p class="foot">押した時刻を記録します。下の時刻は数字で直せます（例：930）。</p>
     <div class="pair" style="margin-top:6px">
-      <label class="tile"><small>開始</small><input type="time" id="f-b2s"></label>
-      <label class="tile"><small>終了</small><input type="time" id="f-b2e"></label>
+      <label class="tile"><small>開始</small><input type="text" class="tm" inputmode="numeric" pattern="[0-9:]*" autocomplete="off" placeholder="--:--" id="f-b2s" data-next="f-b2e"></label>
+      <label class="tile"><small>終了</small><input type="text" class="tm" inputmode="numeric" pattern="[0-9:]*" autocomplete="off" placeholder="--:--" id="f-b2e"></label>
     </div>
     <div class="row" style="margin-top:6px"><span>稼働時間</span><span class="autov num" id="v-b2min">--:--</span></div>
   </div>
@@ -281,24 +319,35 @@ nav button.on{color:var(--pink)}
   </div>
 
   <div class="card c-green">
-    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.5 3 2 6.6 2 11c0 2.5 1.4 4.7 3.7 6.1L5 21l4.2-2.3c.9.2 1.8.3 2.8.3 5.5 0 10-3.6 10-8s-4.5-8-10-8z"/></svg>LINE報告文<span class="cr">自動作成</span></div>
+    <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.5 3 2 6.6 2 11c0 2.5 1.4 4.7 3.7 6.1L5 21l4.2-2.3c.9.2 1.8.3 2.8.3 5.5 0 10-3.6 10-8s-4.5-8-10-8z"/></svg>LINE報告文<button type="button" class="link cr" id="b-copy">コピー</button></div>
     <div class="preview" id="v-line"></div>
   </div>
 
-  <button class="btn primary" id="b-send">日報を作成する</button>
-  <p class="warn hide" id="v-warn"></p>
+  <div class="sendbar">
+    <button type="button" class="todo" id="b-todo"></button>
+    <button class="btn primary" id="b-send">日報を作成する</button>
+  </div>
   <p class="foot" id="v-sendinfo"></p>
-  <button class="btn plain" id="b-copy">LINE報告文をコピー</button>
-  <button class="btn plain" id="b-draft">下書きを共有保存</button>
   <p class="foot" id="v-draft" aria-live="polite"></p>
-  <p class="foot">入力中は自動で下書き保存されます。別端末へ切り替える前に「下書きを共有保存」を押し、共有保存完了の表示を確認してください。</p>
-  <button class="btn plain" id="b-clear" style="color:var(--red)">入力をリセット</button>
+  <details class="more">
+    <summary>その他の操作<span>別端末へ引き継ぎ・リセット</span></summary>
+    <div class="more-body">
+      <p class="sub2" style="margin-top:0">別端末へ引き継ぎ</p>
+      <button class="btn" id="b-draft" style="color:var(--blue)">下書きを共有保存</button>
+      <button class="btn" id="b-loadShared" style="color:var(--blue)">共有下書きを読み込む</button>
+      <p class="foot" id="v-shared" aria-live="polite">切り替え前に「下書きを共有保存」、別端末で「共有下書きを読み込む」。計測中の時間も引き継げます。</p>
+      <p class="foot">入力中は自動でこの端末に下書き保存されます。別端末へ切り替える前に「下書きを共有保存」を押し、共有保存完了の表示を確認してください。</p>
+      <p class="sub2">やり直す</p>
+      <button class="btn" id="b-clear" style="color:var(--red)">入力をリセット</button>
+    </div>
+  </details>
 </section>
 
 <!-- ===== 履歴 ===== -->
 <section class="page" id="p-hist">
   <header class="page-heading"><h1>履歴</h1><button class="link" id="b-csv">CSV書き出し</button></header>
-  <h2>今月のハイライト</h2>
+  <div class="month-nav"><button type="button" class="mprev" aria-label="前の月">‹</button><b class="mlabel"></b><button type="button" class="mnext" aria-label="次の月">›</button></div>
+  <h2 id="v-hl-title">今月のハイライト</h2>
   <div class="stats">
     <div class="stat c-pink"><div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2zM5 9v11h14V9z"/></svg>出勤</div><b id="v-sDays">0</b><u>日</u></div>
     <div class="stat c-orange"><div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2s6 5 6 11a6 6 0 0 1-12 0c0-2.5 1.2-4.4 2.5-5.6 0 2 1 3.6 2.5 3.6C11 7 12 2 12 2z"/></svg>時間</div><b id="v-sHours">0</b><u>時間</u></div>
@@ -333,6 +382,8 @@ nav button.on{color:var(--pink)}
     <button class="btn plain" id="b-resend">未送信をまとめてシートに送る（<span id="v-unsentN"></span>件）</button>
   </div>
   <div class="hdr"><h2>記録 <span id="v-month" style="font-size:15px;color:var(--sub);font-weight:500"></span></h2><button class="link" id="b-sync">更新</button></div>
+  <div class="month-nav"><button type="button" class="mprev" aria-label="前の月">‹</button><b class="mlabel"></b><button type="button" class="mnext" aria-label="次の月">›</button></div>
+  <div style="height:10px"></div>
   <div class="group hist" id="v-hist"></div>
   <p class="foot sync" id="v-sync"></p>
   <p class="foot">タップで編集・LINE文コピー・フォーム再表示・削除ができます。</p>
@@ -392,6 +443,20 @@ nav button.on{color:var(--pink)}
   <button data-p="p-set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>設定</button>
 </nav>
 
+<div class="done" id="done" role="dialog" aria-modal="true" aria-labelledby="done-title">
+  <div class="done-card">
+    <p class="eyebrow" id="done-sub"></p>
+    <h2 id="done-title">おつかれさまでした</h2>
+    <div class="stats">
+      <div class="stat c-green"><div class="ch">配完</div><b id="done-count">0</b><u>個</u></div>
+      <div class="stat c-orange"><div class="ch">勤務</div><b id="done-hours">--</b></div>
+      <div class="stat c-blue"><div class="ch">ペース</div><b id="done-rate">—</b><u>個/時</u></div>
+    </div>
+    <div class="done-notes" id="done-notes"></div>
+    <p class="foot" id="done-status"></p>
+    <button class="btn primary" id="done-ok">OK</button>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 <div class="sheet-bg" id="sheet-bg"></div>
 <div class="sheet" id="sheet">
@@ -459,6 +524,41 @@ const num = v => String(v??'').replace(/[^\d]/g,'');
 const shows = p => ({b1: p!=='午後のみ', b2: p!=='午前のみ'});
 const cntOf = r => (Number(r.c1c)||0)+(Number(r.c2c)||0);
 
+/* ---------- 時刻入力：数字キーパッドで「930」「1730」と打つだけ ---------- */
+// 左から読んで時・分に振り分ける。ありえない数字（分の十の位が6以上など）は捨てる。
+function timeDigits(raw){
+  const ds=String(raw??'').replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/[^\d]/g,'');
+  let h='', m='', closed=false;
+  for(const d of ds){
+    if(!closed){
+      if(h===''){ h=d; if(d>='3') closed=true; continue }   // 3〜9で始まれば1桁の「時」
+      closed=true;
+      if(Number(h+d)<=23){ h+=d; continue }                  // 24以上になるなら「分」として読む
+    }
+    if(m.length===0){ if(d<='5') m=d } else if(m.length===1) m+=d;
+  }
+  return {h,m};
+}
+const timeShow = t => t.m ? `${t.h}:${t.m}` : t.h;                              // 入力途中の表示
+const timeFix = t => t.h==='' ? '' : `${t.h.padStart(2,'0')}:${t.m.padStart(2,'0')}`; // 確定（9 → 09:00）
+const tv = id => { const v=$(id).value; return /^\d\d:\d\d$/.test(v) ? v : '' }; // 確定済みの時刻だけ返す
+document.querySelectorAll('input.tm').forEach(el=>{
+  let fresh=false; // タップ直後の最初の数字は、前の時刻を消して打ち直しにする
+  const pick=()=>{ if(fresh && document.activeElement===el){ try{ el.setSelectionRange(0,el.value.length) }catch(e){} } };
+  el.addEventListener('focus',()=>{ fresh=!!el.value; pick(); setTimeout(pick,0) }); // 打ち始めたら選択し直さない
+  el.addEventListener('input',e=>{
+    const typed = fresh && e.data && /^insert/.test(e.inputType||'') ? e.data : el.value;
+    fresh=false;
+    const t=timeDigits(typed); el.value=timeShow(t);
+    if(t.m.length===2){ // 4桁（または930のような3桁）そろったら確定して次へ
+      el.value=timeFix(t);
+      const next=el.dataset.next && $(el.dataset.next);
+      if(next && !next.value) next.focus(); else el.blur();
+    }
+  });
+  el.addEventListener('blur',()=>{ fresh=false; const v=timeFix(timeDigits(el.value)); if(v!==el.value){ el.value=v; refresh() } });
+});
+
 /* ---------- 入力画面 ---------- */
 let period = '1日', training = [], editing = null;
 let timers = {}, draftReady = false, sending = false;
@@ -518,14 +618,14 @@ function getRec(){
   const sh=shows(period), isOther=$('f-site').value===OTHER;
   const r = { id:editing?editing.id:Date.now(), date:$('f-date').value, name:S.name,
     site: isOther ? $('f-siteOther').value.trim() : $('f-site').value, siteIsOther:isOther,
-    period, start:$('f-start').value, end:$('f-end').value, undelivered:num($('f-undelivered').value)||'0', training:[...training] };
+    period, start:tv('f-start'), end:tv('f-end'), undelivered:num($('f-undelivered').value)||'0', training:[...training] };
   r.minutes = minutes(r.start, r.end);
   [1,2].forEach(n=>{
     const on = sh['b'+n];
     const p=num($(`f-c${n}p`).value), rr=num($(`f-c${n}r`).value)||'0';
     r[`c${n}p`] = on ? p : ''; r[`c${n}r`] = on ? rr : '';
     r[`c${n}c`] = on && p!=='' ? String(Number(p)-Number(rr)) : '';
-    r[`b${n}s`] = on ? $(`f-b${n}s`).value : ''; r[`b${n}e`] = on ? $(`f-b${n}e`).value : '';
+    r[`b${n}s`] = on ? tv(`f-b${n}s`) : ''; r[`b${n}e`] = on ? tv(`f-b${n}e`) : '';
     r[`b${n}min`] = on ? minutes(r[`b${n}s`], r[`b${n}e`]) : null;
     // 編集中で便の開始・終了が空なら、元の稼働時間をそのまま使う（別の端末で作った記録など）
     if(on && editing && !r[`b${n}s`] && !r[`b${n}e`] && editing[`b${n}min`]!=null) r[`b${n}min`] = editing[`b${n}min`];
@@ -554,13 +654,37 @@ function lineText(r){ // GAS版と同じ形式
   L.push(`持ち戻り個数:${r.leftover}`, `未配個数:${r.undelivered}`);
   return L.join('\n');
 }
-function missing(r){
-  if(!S.name) return '設定タブで氏名を入れてください';
-  if(!r.site) return '配達地域を選択してください（その他は地域名を入力）';
-  const sh=shows(r.period);
-  if([1,2].some(n=>sh['b'+n]&&timers[n]?.startedAt)) return '計測中の便をストップしてから送信してください';
-  if((sh.b1&&r.c1p==='')||(sh.b2&&r.c2p==='')) return '配送実績の持出個数を入力してください';
-  return '';
+function todo(r){ // 送信までに足りない項目（上から順）。el＝その入力欄
+  const L=[], sh=shows(r.period);
+  if(!S.name) L.push({short:'氏名（設定）', msg:'設定タブで氏名を入れてください', page:'p-set', el:'s-name'});
+  if(!r.site) L.push({short:'配達地域', msg:'配達地域を選択してください（その他は地域名を入力）', el:$('f-site').value===OTHER?'f-siteOther':'f-site'});
+  if(!r.start||!r.end) L.push({short:'出退勤の時刻', msg:'出勤・退勤の時刻を入力してください', el:r.start?'f-end':'f-start'});
+  [1,2].forEach(n=>{ if(!sh['b'+n]) return;
+    if(r[`c${n}p`]==='') L.push({short:`${n}便の持出`, msg:'配送実績の持出個数を入力してください', el:`f-c${n}p`});
+    if(timers[n]?.startedAt) L.push({short:`${n}便ストップ`, msg:'計測中の便をストップしてから送信してください', el:`b-timer${n}Stop`}) });
+  return L;
+}
+function jumpTodo(t){ // 足りない欄まで画面を動かして、枠を光らせる
+  if(t.page) go(t.page);
+  const el=$(t.el); if(!el) return;
+  const box=el.closest('.tile,.row')||el;
+  if(!t.page) box.scrollIntoView({block:'center',behavior:'smooth'});
+  box.classList.remove('flash'); void box.offsetWidth; box.classList.add('flash');
+}
+/* ---------- いつもの時間：履歴でよく使う出勤・退勤（今の勤務区分）をボタンにする ---------- */
+let usualKey=null;
+function renderUsual(){
+  const norm=t=>{ const m=String(t||'').match(/^(\d{1,2}):(\d\d)$/); return m ? `${m[1].padStart(2,'0')}:${m[2]}` : '' };
+  const cnt=new Map();
+  all().forEach(r=>{ const a=norm(r.start), b=norm(r.end); if(r.period!==period||!a||!b) return;
+    const k=a+'-'+b; cnt.set(k,(cnt.get(k)||0)+1) });
+  const top=[...cnt].sort((x,y)=>y[1]-x[1]||x[0].localeCompare(y[0])).slice(0,3).map(x=>x[0]);
+  const now=tv('f-start')+'-'+tv('f-end'), key=top.join('|')+'#'+now;
+  if(key===usualKey) return; usualKey=key;
+  const box=$('v-usual'); box.innerHTML=''; $('row-usual').classList.toggle('hide',!top.length);
+  top.forEach(k=>{ const [a,b]=k.split('-'), btn=document.createElement('button');
+    btn.type='button'; btn.className='quick'+(k===now?' on':''); btn.textContent=`${a}–${b}`; btn.setAttribute('aria-pressed',String(k===now));
+    btn.onclick=()=>{ $('f-start').value=a; $('f-end').value=b; refresh() }; box.appendChild(btn) });
 }
 function refresh(){
   $('row-other').classList.toggle('hide', $('f-site').value!==OTHER);
@@ -580,8 +704,9 @@ function refresh(){
   $('b-avatar').textContent=(S.name||'?').trim().charAt(0)||'?';
   const parts=[]; if(formBase()) parts.push(S.autoForm?'フォームに自動送信':'記入済みフォームを開く'); if(S.sheetUrl) parts.push('シートに追加');
   $('v-sendinfo').textContent = 'ボタンで：LINE文コピー'+(parts.length?'＋'+parts.join('＋'):'')+'＋履歴に保存'+(formBase()?'':'（フォームURLが未設定です）');
-  if(!$('v-warn').classList.contains('hide') && !missing(r)) $('v-warn').classList.add('hide');
-  renderTimers(); saveDraft();
+  const td=todo(r), tb=$('b-todo'), tt=td.length ? `あと${td.length}つ：${td.map(x=>x.short).join('・')}` : '✓ 入力OK（このまま送信できます）';
+  if(tb.textContent!==tt){ tb.textContent=tt; tb.className='todo'+(td.length?'':' ok') }
+  renderUsual(); renderTimers(); saveDraft();
 }
 
 /* ---------- 送信 ---------- */
@@ -632,14 +757,15 @@ async function saveEdit(r){ // 編集：同じ記録IDでシートの行を上�
   await copied;
   if(!stored) return toast('履歴を保存できません。入力を残しています');
   clearSubmittedShared(); resetInput();
+  histMonth=monthOf(r)===curMonth()?null:monthOf(r); // 直した記録の月を表示する
   go('p-hist'); renderHist(); if(r.sheetSent) syncHist();
   toast(S.sheetUrl && !r.sheetSent ? '保存しました（シートは未送信：電波？）' : '記録を更新しました（LINE文もコピー済み）');
 }
 $('b-editCancel').onclick=()=>{ resetInput(); go('p-hist') };
 $('b-send').onclick = async ()=>{
   if(sending||sharedBusy) return toast('保存処理が終わるまでお待ちください');
-  const r=getRec(), err=missing(r);
-  if(err){ $('v-warn').textContent=err; $('v-warn').classList.remove('hide'); return toast(err) }
+  const r=getRec(), td=todo(r);
+  if(td.length){ jumpTodo(td[0]); return toast(td[0].msg) }
   sending=true; $('b-send').disabled=true;
   try{
   if(editing) return await saveEdit(r);
@@ -656,12 +782,39 @@ $('b-send').onclick = async ()=>{
   await copied;
   const msg=[]; if(S.autoForm&&formBase()) msg.push(r.formSent?'フォーム送信':'フォーム未送信');
   if(S.sheetUrl) msg.push(r.sheetSent?'シート追加':'シート未送信（電波？）');
-  toast('保存＆LINE文コピー済み'+(msg.length?' / '+msg.join(' / '):''));
+  const status='保存＆LINE文コピー済み'+(msg.length?' / '+msg.join(' / '):'');
+  if(stored) showDone(r,status); else toast(status);
   }finally{ sending=false; $('b-send').disabled=false }
 };
+$('b-todo').onclick=()=>{ const td=todo(getRec()); if(td.length) jumpTodo(td[0]) };
 $('b-copy').onclick=()=>copy(lineText(getRec()));
 $('b-draft').onclick=()=>shareDraft();
 $('b-clear').onclick=()=>{ if(confirm('入力をリセットしますか？')) resetInput() };
+
+/* ---------- 送信後の「今日のまとめ」 ---------- */
+function showDone(r, status){
+  const past=all().filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x.date||'')&&x.date<=today());
+  const others=past.filter(x=>String(x.id)!==String(r.id));
+  const me=deliveryPace([r]), notes=$('done-notes'); notes.innerHTML='';
+  const note=(text,cls)=>{ const p=document.createElement('p'); p.textContent=text; if(cls) p.className=cls; notes.appendChild(p) };
+  $('done-sub').textContent=`${r.date}　${r.site}`;
+  $('done-count').textContent=cntOf(r).toLocaleString();
+  $('done-hours').textContent=r.minutes==null?'--':hm(r.minutes);
+  $('done-rate').textContent=paceNum(me.rate);
+  const compare=(label,base)=>{ if(me.rate==null||base.rate==null) return;
+    const d=me.rate-base.rate, same=Math.abs(d)<0.05;
+    note(`${label} ${paceNum(base.rate)} 個/時間 → 今日は${same?'同じペース':`${d>0?'＋':'−'}${paceNum(Math.abs(d))} 個/時間`}`, same?'':d>0?'eff-better':'eff-worse') };
+  compare('全体の平均', deliveryPace(others));
+  if(r.site) compare(`${r.site}の平均`, deliveryPace(others.filter(x=>x.site===r.site)));
+  if(me.rate==null) note('1便・2便の稼働時間を入れると、ペース（1時間あたりの配完個数）も表示されます');
+  if(Number(r.leftover)||Number(r.undelivered)) note(`持ち戻り ${Number(r.leftover)||0}個・未配 ${Number(r.undelivered)||0}個`);
+  const ym=monthOf(r), mon=past.filter(x=>monthOf(x)===ym);
+  note(`${Number(ym.slice(5))}月の合計：出勤 ${new Set(mon.map(x=>x.date)).size}日・配完 ${mon.reduce((s,x)=>s+cntOf(x),0).toLocaleString()}個`);
+  $('done-status').textContent=status;
+  $('done').classList.add('on'); $('done-ok').focus({preventScroll:true});
+}
+$('done-ok').onclick=()=>$('done').classList.remove('on');
+$('done').onclick=e=>{ if(e.target===$('done')) $('done').classList.remove('on') };
 
 /* ---------- 下書きの端末間引き継ぎ ---------- */
 let sharedBusy=false;
@@ -743,6 +896,14 @@ async function clearSubmittedShared(){
 /* ---------- 履歴 ---------- */
 const ICON_BOX='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3 6.5v11L12 22l9-4.5v-11zm0 2.2 6.4 3.2L12 10.6 5.6 7.4zM5 9.1l6 3v7.6l-6-3zm8 10.6v-7.6l6-3v7.6z"/></svg>';
 let cur=null;
+let histMonth=null; // 表示中の月（YYYY-MM）。null＝今月
+const curMonth=()=>today().slice(0,7);
+const monthOf=r=>/^\d{4}-\d{2}/.test(r.date||'') ? r.date.slice(0,7) : curMonth(); // 日付なしの記録は今月に出す
+const monthLabel=ym=>`${Number(ym.slice(0,4))}年${Number(ym.slice(5))}月`;
+function shiftMonth(ym,d){ const t=new Date(Number(ym.slice(0,4)),Number(ym.slice(5))-1+d,1); return `${t.getFullYear()}-${pad(t.getMonth()+1)}` }
+function moveMonth(d){ const next=shiftMonth(histMonth||curMonth(),d); histMonth=next===curMonth()?null:next; renderHist() }
+document.querySelectorAll('.mprev').forEach(b=>b.onclick=()=>moveMonth(-1));
+document.querySelectorAll('.mnext').forEach(b=>b.onclick=()=>moveMonth(1));
 /* 履歴はスプレッドシートから読み込んで、どの端末でも同じ内容を表示する */
 let R = load(K.remote, null), syncState = 'local'; // ok:シートと同期 / offline:読めない / local:シート未設定
 function fromSheet(x){ // シートの1行 → このアプリの形式
@@ -784,7 +945,8 @@ async function syncHist(){
   renderHist();
 }
 function renderSummary(A){
-  const ym=today().slice(0,7), mon=A.filter(r=>(r.date||'').startsWith(ym));
+  const ym=histMonth||curMonth(), mon=A.filter(r=>monthOf(r)===ym);
+  $('v-hl-title').textContent=(ym===curMonth()?'今月':ym.slice(0,4)===curMonth().slice(0,4)?`${Number(ym.slice(5))}月`:monthLabel(ym))+'のハイライト';
   $('v-sDays').textContent=new Set(mon.map(r=>r.date)).size;
   $('v-sHours').textContent=(Math.round(mon.reduce((s,r)=>s+(r.minutes||0),0)/6)/10).toString();
   $('v-sCount').textContent=mon.reduce((s,r)=>s+cntOf(r),0).toLocaleString();
@@ -931,9 +1093,14 @@ function legHtml(cls, label, min, cnt){
 }
 function renderHist(){
   const A=all(), box=$('v-hist'); box.innerHTML='';
-  $('v-month').textContent=`（全${A.length}件）`;
-  if(!A.length) box.innerHTML='<div class="empty">まだ記録がありません</div>';
-  A.forEach(r=>{
+  const ym=histMonth||curMonth(), list=A.filter(r=>monthOf(r)===ym), months=A.map(monthOf);
+  const first=months.reduce((a,b)=>b<a?b:a,curMonth()), last=months.reduce((a,b)=>b>a?b:a,curMonth());
+  document.querySelectorAll('.mlabel').forEach(e=>e.textContent=monthLabel(ym));
+  document.querySelectorAll('.mprev').forEach(b=>b.disabled=ym<=first);
+  document.querySelectorAll('.mnext').forEach(b=>b.disabled=ym>=last);
+  $('v-month').textContent=`（${list.length}件／全${A.length}件）`;
+  if(!list.length) box.innerHTML=`<div class="empty">${A.length?'この月の記録はありません':'まだ記録がありません'}</div>`;
+  list.forEach(r=>{
     const d=document.createElement('div'), sh=shows(r.period); d.className='row';
     d.innerHTML=`<span class="dot">${ICON_BOX}</span><div class="t"><b></b><div class="legs"></div><small></small></div>${S.sheetUrl&&!r.sheetSent?'<span class="badge ng">未送信</span>':''}<span class="chev">›</span>`;
     d.querySelector('b').textContent=`${r.date}　${r.site}`;
@@ -946,7 +1113,7 @@ function renderHist(){
     d.querySelector('.t').appendChild(detail);
     d.onclick=()=>openSheet(r); box.appendChild(d);
   });
-  renderSummary(A); renderPace(A);
+  renderSummary(A); renderPace(A); renderUsual();
   const un=H.filter(r=>S.sheetUrl&&!r.sheetSent);
   $('v-unsent').classList.toggle('hide',!un.length); $('v-unsentN').textContent=un.length;
   $('v-region-sync').textContent=syncState==='ok'?'スプレッドシートの履歴で集計しています':syncState==='offline'?'シートから読み込めませんでした。保存済みの履歴で表示しています':'この端末の履歴で集計しています';
