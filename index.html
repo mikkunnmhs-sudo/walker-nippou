@@ -66,7 +66,7 @@ h2{font-size:22px;font-weight:700;margin:26px 4px 10px}
 .tile input{width:100%;border:0;background:transparent;color:var(--text);font-size:26px;font-weight:700;padding:2px 0;
   outline:none;-webkit-appearance:none;appearance:none;min-height:36px;text-align:left}
 .tile input::-webkit-date-and-time-value{text-align:left}
-.tile input[type=time]{font-size:22px}
+.tile input.tm::placeholder{color:var(--sub);opacity:.55}
 .tile .unit{position:absolute;right:12px;bottom:12px;font-size:14px;font-weight:600;color:var(--sub)}
 .tile.has-unit input{padding-right:24px}
 .row{display:flex;align-items:center;min-height:44px;padding:0 16px;position:relative;gap:10px}
@@ -227,9 +227,10 @@ nav button.on{color:var(--pink)}
     <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 10.4 3.2 1.9-.9 1.5L11 13V7h2v5.4z"/></svg>出勤・退勤<span class="cr">10分単位</span></div>
     <div class="big num" id="v-hours">--</div>
     <div class="pair">
-      <label class="tile"><small>稼働開始（出勤）</small><input type="time" id="f-start"></label>
-      <label class="tile"><small>稼働終了（退勤）</small><input type="time" id="f-end"></label>
+      <label class="tile"><small>稼働開始（出勤）</small><input type="text" class="tm" inputmode="numeric" pattern="[0-9:]*" autocomplete="off" placeholder="--:--" id="f-start" data-next="f-end" aria-describedby="v-tmhint"></label>
+      <label class="tile"><small>稼働終了（退勤）</small><input type="text" class="tm" inputmode="numeric" pattern="[0-9:]*" autocomplete="off" placeholder="--:--" id="f-end" aria-describedby="v-tmhint"></label>
     </div>
+    <p class="foot" id="v-tmhint" style="margin:8px 0 0">時刻は数字だけで入力できます（例：930 → 09:30、1730 → 17:30）</p>
   </div>
 
   <div class="card c-green" id="sec-b1">
@@ -242,10 +243,10 @@ nav button.on{color:var(--pink)}
     <p class="sub2">1便 稼働時間</p>
     <div class="pair timer-actions"><button class="btn" id="b-timer1Start">▶ スタート</button><button class="btn" id="b-timer1Stop">■ ストップ</button></div>
     <p class="timer-status" id="v-timer1"></p>
-    <p class="foot">押した時刻を記録します。下の時刻は手入力でも直せます。</p>
+    <p class="foot">押した時刻を記録します。下の時刻は数字で直せます（例：930）。</p>
     <div class="pair" style="margin-top:6px">
-      <label class="tile"><small>開始</small><input type="time" id="f-b1s"></label>
-      <label class="tile"><small>終了</small><input type="time" id="f-b1e"></label>
+      <label class="tile"><small>開始</small><input type="text" class="tm" inputmode="numeric" pattern="[0-9:]*" autocomplete="off" placeholder="--:--" id="f-b1s" data-next="f-b1e"></label>
+      <label class="tile"><small>終了</small><input type="text" class="tm" inputmode="numeric" pattern="[0-9:]*" autocomplete="off" placeholder="--:--" id="f-b1e"></label>
     </div>
     <div class="row" style="margin-top:6px"><span>稼働時間</span><span class="autov num" id="v-b1min">--:--</span></div>
   </div>
@@ -259,10 +260,10 @@ nav button.on{color:var(--pink)}
     <p class="sub2">2便 稼働時間</p>
     <div class="pair timer-actions"><button class="btn" id="b-timer2Start">▶ スタート</button><button class="btn" id="b-timer2Stop">■ ストップ</button></div>
     <p class="timer-status" id="v-timer2"></p>
-    <p class="foot">押した時刻を記録します。下の時刻は手入力でも直せます。</p>
+    <p class="foot">押した時刻を記録します。下の時刻は数字で直せます（例：930）。</p>
     <div class="pair" style="margin-top:6px">
-      <label class="tile"><small>開始</small><input type="time" id="f-b2s"></label>
-      <label class="tile"><small>終了</small><input type="time" id="f-b2e"></label>
+      <label class="tile"><small>開始</small><input type="text" class="tm" inputmode="numeric" pattern="[0-9:]*" autocomplete="off" placeholder="--:--" id="f-b2s" data-next="f-b2e"></label>
+      <label class="tile"><small>終了</small><input type="text" class="tm" inputmode="numeric" pattern="[0-9:]*" autocomplete="off" placeholder="--:--" id="f-b2e"></label>
     </div>
     <div class="row" style="margin-top:6px"><span>稼働時間</span><span class="autov num" id="v-b2min">--:--</span></div>
   </div>
@@ -459,6 +460,41 @@ const num = v => String(v??'').replace(/[^\d]/g,'');
 const shows = p => ({b1: p!=='午後のみ', b2: p!=='午前のみ'});
 const cntOf = r => (Number(r.c1c)||0)+(Number(r.c2c)||0);
 
+/* ---------- 時刻入力：数字キーパッドで「930」「1730」と打つだけ ---------- */
+// 左から読んで時・分に振り分ける。ありえない数字（分の十の位が6以上など）は捨てる。
+function timeDigits(raw){
+  const ds=String(raw??'').replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/[^\d]/g,'');
+  let h='', m='', closed=false;
+  for(const d of ds){
+    if(!closed){
+      if(h===''){ h=d; if(d>='3') closed=true; continue }   // 3〜9で始まれば1桁の「時」
+      closed=true;
+      if(Number(h+d)<=23){ h+=d; continue }                  // 24以上になるなら「分」として読む
+    }
+    if(m.length===0){ if(d<='5') m=d } else if(m.length===1) m+=d;
+  }
+  return {h,m};
+}
+const timeShow = t => t.m ? `${t.h}:${t.m}` : t.h;                              // 入力途中の表示
+const timeFix = t => t.h==='' ? '' : `${t.h.padStart(2,'0')}:${t.m.padStart(2,'0')}`; // 確定（9 → 09:00）
+const tv = id => { const v=$(id).value; return /^\d\d:\d\d$/.test(v) ? v : '' }; // 確定済みの時刻だけ返す
+document.querySelectorAll('input.tm').forEach(el=>{
+  let fresh=false; // タップ直後の最初の数字は、前の時刻を消して打ち直しにする
+  const pick=()=>{ if(fresh && document.activeElement===el){ try{ el.setSelectionRange(0,el.value.length) }catch(e){} } };
+  el.addEventListener('focus',()=>{ fresh=!!el.value; pick(); setTimeout(pick,0) }); // 打ち始めたら選択し直さない
+  el.addEventListener('input',e=>{
+    const typed = fresh && e.data && /^insert/.test(e.inputType||'') ? e.data : el.value;
+    fresh=false;
+    const t=timeDigits(typed); el.value=timeShow(t);
+    if(t.m.length===2){ // 4桁（または930のような3桁）そろったら確定して次へ
+      el.value=timeFix(t);
+      const next=el.dataset.next && $(el.dataset.next);
+      if(next && !next.value) next.focus(); else el.blur();
+    }
+  });
+  el.addEventListener('blur',()=>{ fresh=false; const v=timeFix(timeDigits(el.value)); if(v!==el.value){ el.value=v; refresh() } });
+});
+
 /* ---------- 入力画面 ---------- */
 let period = '1日', training = [], editing = null;
 let timers = {}, draftReady = false, sending = false;
@@ -518,14 +554,14 @@ function getRec(){
   const sh=shows(period), isOther=$('f-site').value===OTHER;
   const r = { id:editing?editing.id:Date.now(), date:$('f-date').value, name:S.name,
     site: isOther ? $('f-siteOther').value.trim() : $('f-site').value, siteIsOther:isOther,
-    period, start:$('f-start').value, end:$('f-end').value, undelivered:num($('f-undelivered').value)||'0', training:[...training] };
+    period, start:tv('f-start'), end:tv('f-end'), undelivered:num($('f-undelivered').value)||'0', training:[...training] };
   r.minutes = minutes(r.start, r.end);
   [1,2].forEach(n=>{
     const on = sh['b'+n];
     const p=num($(`f-c${n}p`).value), rr=num($(`f-c${n}r`).value)||'0';
     r[`c${n}p`] = on ? p : ''; r[`c${n}r`] = on ? rr : '';
     r[`c${n}c`] = on && p!=='' ? String(Number(p)-Number(rr)) : '';
-    r[`b${n}s`] = on ? $(`f-b${n}s`).value : ''; r[`b${n}e`] = on ? $(`f-b${n}e`).value : '';
+    r[`b${n}s`] = on ? tv(`f-b${n}s`) : ''; r[`b${n}e`] = on ? tv(`f-b${n}e`) : '';
     r[`b${n}min`] = on ? minutes(r[`b${n}s`], r[`b${n}e`]) : null;
     // 編集中で便の開始・終了が空なら、元の稼働時間をそのまま使う（別の端末で作った記録など）
     if(on && editing && !r[`b${n}s`] && !r[`b${n}e`] && editing[`b${n}min`]!=null) r[`b${n}min`] = editing[`b${n}min`];
