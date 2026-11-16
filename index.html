@@ -99,7 +99,7 @@ h2{font-size:22px;font-weight:700;margin:26px 4px 10px}
 .switch input:checked+i{background:var(--green)}
 .switch input:checked+i::after{transform:translateX(20px)}
 /* ---- 履歴：ハイライト ---- */
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .stat{background:var(--card);border-radius:12px;padding:10px 12px}
 .stat .ch{font-size:13px;margin-bottom:2px}
 .stat b{font-size:24px;font-weight:700}
@@ -249,7 +249,7 @@ nav button.on{color:var(--pink)}
   <div class="card c-blue">
     <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="7.5" r="4.5"/><path d="M3 21c0-4.4 4-7 9-7s9 2.6 9 7z"/></svg>基本情報</div>
     <div class="row"><span>氏名</span><span class="val" id="v-name">未設定</span></div>
-    <div class="row"><span>勤務日</span><input type="date" id="f-date"></div>
+    <div class="row"><span id="l-date">勤務日</span><input type="date" id="f-date"></div>
     <div class="row"><span>配達地域（必須）</span><select id="f-site"></select></div>
     <div class="row hide" id="row-other"><span>現場名</span><input id="f-siteOther" placeholder="入力"></div>
   </div>
@@ -262,6 +262,7 @@ nav button.on{color:var(--pink)}
   <div class="card c-orange">
     <div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 10.4 3.2 1.9-.9 1.5L11 13V7h2v5.4z"/></svg>出勤・退勤<span class="cr">10分単位</span></div>
     <div class="big num" id="v-hours">--</div>
+    <p class="timer-status" id="v-actual" style="margin-top:4px"></p>
     <div class="pair">
       <label class="tile"><small>稼働開始（出勤）</small><input type="text" class="tm" inputmode="numeric" pattern="[0-9:]*" autocomplete="off" placeholder="--:--" id="f-start" data-next="f-end" aria-describedby="v-tmhint"></label>
       <label class="tile"><small>稼働終了（退勤）</small><input type="text" class="tm" inputmode="numeric" pattern="[0-9:]*" autocomplete="off" placeholder="--:--" id="f-end" aria-describedby="v-tmhint"></label>
@@ -350,7 +351,8 @@ nav button.on{color:var(--pink)}
   <h2 id="v-hl-title">今月のハイライト</h2>
   <div class="stats">
     <div class="stat c-pink"><div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2zM5 9v11h14V9z"/></svg>出勤</div><b id="v-sDays">0</b><u>日</u></div>
-    <div class="stat c-orange"><div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2s6 5 6 11a6 6 0 0 1-12 0c0-2.5 1.2-4.4 2.5-5.6 0 2 1 3.6 2.5 3.6C11 7 12 2 12 2z"/></svg>時間</div><b id="v-sHours">0</b><u>時間</u></div>
+    <div class="stat c-orange"><div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2s6 5 6 11a6 6 0 0 1-12 0c0-2.5 1.2-4.4 2.5-5.6 0 2 1 3.6 2.5 3.6C11 7 12 2 12 2z"/></svg>勤務</div><b id="v-sHours">0</b><u>時間</u></div>
+    <div class="stat c-teal"><div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 10.4 3.2 1.9-.9 1.5L11 13V7h2v5.4z"/></svg>実動</div><b id="v-sActual">0</b><u>時間</u></div>
     <div class="stat c-green"><div class="ch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3 6.5v11L12 22l9-4.5v-11zm0 2.2 6.4 3.2L12 10.6 5.6 7.4zM5 9.1l6 3v7.6l-6-3zm8 10.6v-7.6l6-3v7.6z"/></svg>配完</div><b id="v-sCount">0</b><u>個</u></div>
   </div>
   <h2>配達ペース</h2>
@@ -450,6 +452,7 @@ nav button.on{color:var(--pink)}
     <div class="stats">
       <div class="stat c-green"><div class="ch">配完</div><b id="done-count">0</b><u>個</u></div>
       <div class="stat c-orange"><div class="ch">勤務</div><b id="done-hours">--</b></div>
+      <div class="stat c-teal"><div class="ch">実動</div><b id="done-actual">--</b></div>
       <div class="stat c-blue"><div class="ch">ペース</div><b id="done-rate">—</b><u>個/時</u></div>
     </div>
     <div class="done-notes" id="done-notes"></div>
@@ -522,6 +525,11 @@ const hm = m => m==null ? '' : `${Math.floor(m/60)}:${pad(m%60)}`;      // 2:30
 const hmPad = m => m==null ? '' : `${pad(Math.floor(m/60))}:${pad(m%60)}`; // 02:30（フォーム用）
 const num = v => String(v??'').replace(/[^\d]/g,'');
 const shows = p => ({b1: p!=='午後のみ', b2: p!=='午前のみ'});
+// 実動時間＝表示中の便（1便・2便）の稼働時間の合計。どちらも未入力なら null
+const actualOf = r => { const sh=shows(r.period); let m=null; [1,2].forEach(n=>{ const v=r[`b${n}min`]; if(sh['b'+n]&&v!=null&&Number.isFinite(Number(v))) m=(m||0)+Number(v) }); return m };
+// 曜日つきの日付：2026-11-16 → 2026-11-16（月）
+const wdOf = d => { const m=String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? '日月火水木金土'[new Date(+m[1],m[2]-1,+m[3]).getDay()] : '' };
+const dateW = d => wdOf(d) ? `${d}（${wdOf(d)}）` : (d||'');
 const cntOf = r => (Number(r.c1c)||0)+(Number(r.c2c)||0);
 
 /* ---------- 時刻入力：数字キーパッドで「930」「1730」と打つだけ ---------- */
@@ -698,6 +706,8 @@ function refresh(){
     $(`v-b${n}warn`).textContent = Number(c)<0 ? '持ち戻りが持出を超えています' : '';
     $(`v-b${n}min`).textContent = r[`b${n}min`]==null ? '--:--' : hm(r[`b${n}min`]);
   });
+  { const a=actualOf(r); $('v-actual').textContent = a==null ? '実動 --（1便・2便の稼働時間の合計）' : `実動 ${fmtH(a)}（1便・2便の稼働時間の合計）` }
+  $('l-date').textContent = wdOf(r.date) ? `勤務日（${wdOf(r.date)}）` : '勤務日';
   $('v-left').innerHTML = `${r.leftover}<u>個</u>`;
   $('v-line').textContent=lineText(r);
   $('v-name').textContent=S.name||'未設定（設定タブで入力）';
@@ -744,7 +754,7 @@ async function copy(t, quiet){
 function setEditing(r){
   editing = r;
   $('edit-card').classList.toggle('hide', !r);
-  if(r) $('v-editing').textContent = `${r.date} ${r.site}`;
+  if(r) $('v-editing').textContent = `${dateW(r.date)} ${r.site}`;
   $('b-send').textContent = r ? '変更を保存' : '日報を作成する';
 }
 async function saveEdit(r){ // 編集：同じ記録IDでシートの行を上書きする（フォームは開かない）
@@ -797,9 +807,10 @@ function showDone(r, status){
   const others=past.filter(x=>String(x.id)!==String(r.id));
   const me=deliveryPace([r]), notes=$('done-notes'); notes.innerHTML='';
   const note=(text,cls)=>{ const p=document.createElement('p'); p.textContent=text; if(cls) p.className=cls; notes.appendChild(p) };
-  $('done-sub').textContent=`${r.date}　${r.site}`;
+  $('done-sub').textContent=`${dateW(r.date)}　${r.site}`;
   $('done-count').textContent=cntOf(r).toLocaleString();
   $('done-hours').textContent=r.minutes==null?'--':hm(r.minutes);
+  $('done-actual').textContent=actualOf(r)==null?'--':hm(actualOf(r));
   $('done-rate').textContent=paceNum(me.rate);
   const compare=(label,base)=>{ if(me.rate==null||base.rate==null) return;
     const d=me.rate-base.rate, same=Math.abs(d)<0.05;
@@ -809,7 +820,7 @@ function showDone(r, status){
   if(me.rate==null) note('1便・2便の稼働時間を入れると、ペース（1時間あたりの配完個数）も表示されます');
   if(Number(r.leftover)||Number(r.undelivered)) note(`持ち戻り ${Number(r.leftover)||0}個・未配 ${Number(r.undelivered)||0}個`);
   const ym=monthOf(r), mon=past.filter(x=>monthOf(x)===ym);
-  note(`${Number(ym.slice(5))}月の合計：出勤 ${new Set(mon.map(x=>x.date)).size}日・配完 ${mon.reduce((s,x)=>s+cntOf(x),0).toLocaleString()}個`);
+  note(`${Number(ym.slice(5))}月の合計：出勤 ${new Set(mon.map(x=>x.date)).size}日・実動 ${paceNum(mon.reduce((s,x)=>s+(actualOf(x)||0),0)/60)}時間・配完 ${mon.reduce((s,x)=>s+cntOf(x),0).toLocaleString()}個`);
   $('done-status').textContent=status;
   $('done').classList.add('on'); $('done-ok').focus({preventScroll:true});
 }
@@ -871,7 +882,7 @@ $('b-loadShared').onclick=async()=>{
     if(!remote.draft){ sharedStatus('共有下書きはありません。元の端末で「下書きを共有保存」を押してください'); return }
     const d=remote.draft;
     if(typeof d!=='object'||!('c1p' in d)||!d.date) throw new Error('共有下書きの形式が違います');
-    if(!confirm(`${d.date}の共有下書きを読み込みますか？今の入力を置き換えます。`)){ sharedStatus('読み込みを中止しました'); return }
+    if(!confirm(`${dateW(d.date)}の共有下書きを読み込みますか？今の入力を置き換えます。`)){ sharedStatus('読み込みを中止しました'); return }
     // 読み込む前の端末内下書きを残す（通信が切れても保存される）。
     if(!save('wn_draft_before_shared',draftSnapshot())) throw new Error('現在の入力を退避できないため読み込みを中止しました');
     assertSharedContext(ctx); setEditing(d.editing||null); setRec(d); rememberShared(remote); go('p-input');
@@ -949,6 +960,7 @@ function renderSummary(A){
   $('v-hl-title').textContent=(ym===curMonth()?'今月':ym.slice(0,4)===curMonth().slice(0,4)?`${Number(ym.slice(5))}月`:monthLabel(ym))+'のハイライト';
   $('v-sDays').textContent=new Set(mon.map(r=>r.date)).size;
   $('v-sHours').textContent=(Math.round(mon.reduce((s,r)=>s+(r.minutes||0),0)/6)/10).toString();
+  $('v-sActual').textContent=(Math.round(mon.reduce((s,r)=>s+(actualOf(r)||0),0)/6)/10).toString();
   $('v-sCount').textContent=mon.reduce((s,r)=>s+cntOf(r),0).toLocaleString();
   const days=[]; for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i);
     const k=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
@@ -1103,11 +1115,11 @@ function renderHist(){
   list.forEach(r=>{
     const d=document.createElement('div'), sh=shows(r.period); d.className='row';
     d.innerHTML=`<span class="dot">${ICON_BOX}</span><div class="t"><b></b><div class="legs"></div><small></small></div>${S.sheetUrl&&!r.sheetSent?'<span class="badge ng">未送信</span>':''}<span class="chev">›</span>`;
-    d.querySelector('b').textContent=`${r.date}　${r.site}`;
+    d.querySelector('b').textContent=`${dateW(r.date)}　${r.site}`;
     const legs=d.querySelector('.legs');
     if(sh.b1) legs.append(legHtml('am','午前', r.b1min, r.c1c));
     if(sh.b2) legs.append(legHtml('pm','午後', r.b2min, r.c2c));
-    d.querySelector('small').textContent=`${r.period}・${r.start}〜${r.end}`+(Number(r.leftover)?`・持戻${r.leftover}`:'')+(Number(r.undelivered)?`・未配${r.undelivered}`:'');
+    d.querySelector('small').textContent=`${r.period}・${r.start}〜${r.end}`+(actualOf(r)!=null?`・実動${hm(actualOf(r))}`:'')+(Number(r.leftover)?`・持戻${r.leftover}`:'')+(Number(r.undelivered)?`・未配${r.undelivered}`:'');
     const pace=deliveryPace([r]), detail=document.createElement('small'); detail.className='record-efficiency';
     detail.textContent=pace.legs?`${paceUnit(pace.rate,'個/時間')}・${paceUnit(pace.perItem,'分/個')}${pace.excluded?'（時間等が未入力の便を除く）':''}`:'配達ペース：稼働時間・配完個数を入力すると表示';
     d.querySelector('.t').appendChild(detail);
@@ -1122,7 +1134,7 @@ function renderHist(){
   else if(syncState==='offline') sy.innerHTML='<i class="off"></i>シートから読み込めませんでした（電波がない、またはApps Scriptが未更新）。「更新」で再読み込みできます'+(R?'（前回読み込んだ内容を表示中）':'');
   else sy.innerHTML='<i class="off"></i>この端末の記録だけを表示中（設定でスプレッドシートのURLを入れると全端末で共有できます）';
 }
-function openSheet(r){ cur=r; $('sheet-title').textContent=`${r.date} ${r.site}`;
+function openSheet(r){ cur=r; $('sheet-title').textContent=`${dateW(r.date)} ${r.site}`;
   $('a-form').classList.toggle('hide',!formBase()); $('a-resend').classList.toggle('hide',!S.sheetUrl);
   $('sheet').classList.add('on'); $('sheet-bg').classList.add('on') }
 function closeSheet(){ $('sheet').classList.remove('on'); $('sheet-bg').classList.remove('on') }
@@ -1148,8 +1160,8 @@ function download(name, text, type){
   document.body.appendChild(a); a.click(); a.remove();
 }
 $('b-csv').onclick=()=>{
-  const head=['日付','現場','勤務区分','出勤','退勤','C1持出','C1持戻','C1配完','C2持出','C2持戻','C2配完','持ち戻り合計','未配','1便稼働','2便稼働','研修'];
-  const rows=all().map(r=>[r.date,r.site,r.period,r.start,r.end,r.c1p,r.c1r,r.c1c,r.c2p,r.c2r,r.c2c,r.leftover,r.undelivered,hm(r.b1min),hm(r.b2min),(r.training||[]).join('・')]);
+  const head=['日付','現場','勤務区分','出勤','退勤','C1持出','C1持戻','C1配完','C2持出','C2持戻','C2配完','持ち戻り合計','未配','1便稼働','2便稼働','研修','実動合計'];
+  const rows=all().map(r=>[r.date,r.site,r.period,r.start,r.end,r.c1p,r.c1r,r.c1c,r.c2p,r.c2r,r.c2c,r.leftover,r.undelivered,hm(r.b1min),hm(r.b2min),(r.training||[]).join('・'),hm(actualOf(r))]);
   download(`日報_${today()}.csv`, '﻿'+[head,...rows].map(a=>a.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\r\n'), 'text/csv');
 };
 
